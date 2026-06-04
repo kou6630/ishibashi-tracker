@@ -1,0 +1,1852 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>石橋ぶりぶりトラッカー</title>
+  <link rel="stylesheet" href="tracker-style.css">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      padding: clamp(5px, 1vh, 10px);
+      display: grid;
+      font-family: Arial, sans-serif;
+      background: #07090f;
+      color: #f4f7fb;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: clamp(5px, 0.8vh, 8px);
+      height: 100%;
+      min-height: 0;
+    }
+
+    .top-area {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) max-content;
+      gap: clamp(4px, 0.7vh, 8px) clamp(6px, 0.8vw, 10px);
+      align-items: start;
+      min-width: 0;
+      padding: clamp(5px, 0.8vh, 8px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 8px;
+      background: rgba(12, 17, 27, 0.94);
+    }
+
+    .top-left-area {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(2px, 0.35vh, 4px);
+      min-width: 0;
+    }
+
+    .top-right-area {
+      display: grid;
+      grid-template-columns: clamp(150px, 12vw, 190px) clamp(168px, 13vw, 220px) clamp(116px, 8.2vw, 142px);
+      grid-template-areas: "upgrade state bias";
+      gap: clamp(4px, 0.7vh, 8px) clamp(6px, 0.8vw, 10px);
+      align-items: start;
+      min-width: 0;
+      width: max-content;
+    }
+
+    .tables-area {
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .collection-area {
+      min-height: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(14px, 2.1vh, 20px);
+      letter-spacing: 0.04em;
+      color: #111111;
+      text-shadow: none;
+    }
+
+
+    .match-info {
+      grid-area: state;
+      display: flex;
+      position: static;
+      z-index: 20;
+      width: auto;
+      gap: 4px;
+      flex-direction: column;
+      flex-wrap: nowrap;
+      margin: 0;
+      padding: clamp(5px, 0.65vh, 7px) clamp(6px, 0.65vw, 8px);
+      border: 1px solid #111111;
+      border-radius: 12px;
+      background: #ffffff;
+      box-shadow: none;
+      backdrop-filter: none;
+      font-size: clamp(8px, 1.1vh, 10px);
+      font-weight: bold;
+    }
+
+    .match-info::before {
+      content: "今の状態";
+      margin-bottom: 1px;
+      color: #111111;
+      font-size: clamp(7px, 0.95vh, 9px);
+      font-weight: bold;
+    }
+
+    .match-info span {
+      padding: 3px 6px;
+      border: 1px solid #111111;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #111111;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .controls {
+      display: flex;
+      gap: clamp(4px, 0.55vw, 6px);
+      flex-wrap: wrap;
+      margin: 0;
+      align-items: center;
+    }
+
+    .settings-panel.is-open {
+      display: flex !important;
+    }
+
+    button {
+      padding: clamp(3px, 0.55vh, 6px) clamp(6px, 0.75vw, 10px);
+      border: 1px solid #111111;
+      border-radius: clamp(7px, 1vh, 10px);
+      background: #ffffff;
+      color: #111111;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: none;
+    }
+
+    button:hover {
+      filter: brightness(1.08);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+      filter: grayscale(0.4);
+    }
+
+    .status {
+      margin: clamp(2px, 0.4vh, 4px) 0;
+      font-size: clamp(8px, 1.1vh, 10px);
+      color: #aeb8cf;
+    }
+
+    #playersStatus {
+      display: inline-block;
+      min-width: 220px;
+      margin-top: 0;
+      color: #111111;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .teams {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(6px, 0.8vw, 10px);
+      height: auto;
+      min-height: 0;
+      margin-top: 0;
+    }
+
+    .controls-secondary {
+      margin-bottom: 0;
+    }
+
+    .team-box {
+      min-width: 0;
+      min-height: 0;
+      height: fit-content;
+      border: 1px solid #111111;
+      border-radius: clamp(10px, 1.5vh, 15px);
+      padding: clamp(5px, 0.8vh, 8px);
+      overflow-x: auto;
+      background: #ffffff;
+      box-shadow: none;
+      backdrop-filter: none;
+    }
+
+    .team-box:first-child {
+      border-top: 3px solid #3f8cff;
+    }
+
+    .team-box:last-child {
+      border-top: 3px solid #ff4655;
+    }
+
+    .team-title {
+      margin: 0 0 clamp(3px, 0.55vh, 6px);
+      font-size: clamp(11px, 1.55vh, 14px);
+      letter-spacing: 0.08em;
+    }
+
+    .team-box:first-child .team-title {
+      color: #7fb0ff;
+    }
+
+    .team-box:last-child .team-title {
+      color: #ff7480;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: clamp(7px, min(0.72vw, 1.02vh), 10px);
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: clamp(1px, 0.38vh, 4px) clamp(2px, 0.28vw, 4px);
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: middle;
+    }
+
+    th {
+      color: #8f9bb5;
+      font-size: clamp(7px, 0.95vh, 9px);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    tbody tr {
+      height: clamp(24px, 3.2vh, 34px);
+    }
+
+    .placeholder-player-row td {
+      color: #7f8ba6;
+    }
+
+    .placeholder-icon {
+      display: inline-block;
+      opacity: 0;
+    }
+
+    .name {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #111111;
+      font-weight: bold;
+    }
+
+    .rank-cell,
+    .agent-cell {
+      display: flex;
+      align-items: center;
+      gap: clamp(3px, 0.45vw, 6px);
+      min-width: 0;
+    }
+
+    .rank-cell span,
+    .agent-cell span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .rank-icon {
+      width: clamp(14px, min(1.35vw, 2vh), 22px);
+      height: clamp(14px, min(1.35vw, 2vh), 22px);
+      object-fit: contain;
+      flex: 0 0 auto;
+      filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.16));
+    }
+
+    .agent-icon {
+      width: clamp(16px, min(1.5vw, 2.25vh), 24px);
+      height: clamp(16px, min(1.5vw, 2.25vh), 24px);
+      object-fit: contain;
+      flex: 0 0 auto;
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+
+    .bias-guide {
+      grid-area: bias;
+      position: static;
+      z-index: 20;
+      width: auto;
+      padding: clamp(5px, 0.65vh, 7px) clamp(6px, 0.65vw, 8px);
+      border: 1px solid #111111;
+      border-radius: 12px;
+      background: #ffffff;
+      box-shadow: none;
+      backdrop-filter: none;
+      font-size: clamp(7px, 0.92vh, 9px);
+      color: #111111;
+      pointer-events: none;
+    }
+
+    .bias-guide-title {
+      margin: 0 0 4px;
+      font-size: clamp(7px, 0.95vh, 9px);
+      color: #111111;
+      font-weight: bold;
+    }
+
+    .bias-guide-list {
+      margin: 0;
+      padding-left: 13px;
+      line-height: 1.26;
+    }
+
+    .bias-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: clamp(42px, 4.5vw, 64px);
+      padding: clamp(2px, 0.35vh, 4px) clamp(4px, 0.55vw, 7px);
+      border-radius: 999px;
+      font-size: clamp(8px, 1.12vh, 11px);
+      font-weight: bold;
+      border: 1px solid #111111;
+      background: #ffffff;
+    }
+
+    .bias-low,
+    .bias-mid,
+    .bias-high,
+    .bias-top {
+      color: inherit;
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: none;
+    }
+
+    .bottom-panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: clamp(6px, 0.8vw, 10px);
+      margin-top: clamp(4px, 0.6vh, 7px);
+    }
+
+    .collection-area .bottom-panels {
+      margin-top: 0;
+    }
+
+    .collection-display-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 8500;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(10px, 2vw, 22px);
+      background: rgba(0, 0, 0, 0.42);
+    }
+
+    .collection-display-overlay.is-open {
+      display: flex;
+    }
+
+    .collection-display-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: clamp(8px, 1.2vh, 12px);
+      width: min(96vw, 1180px);
+      height: min(88vh, 680px);
+      padding: clamp(10px, 1.4vw, 16px);
+      border: 1px solid #111111;
+      border-radius: 14px;
+      background: #ffffff;
+      color: #111111;
+      overflow: hidden;
+    }
+
+    .collection-display-title {
+      margin: 0;
+      color: #111111;
+      font-size: clamp(14px, 2vh, 20px);
+      font-weight: bold;
+    }
+
+    .collection-display-actions {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    #collectionDisplayPanel #collectionPedestalStage.collection-pedestal-stage {
+      position: relative !important;
+      left: auto !important;
+      bottom: auto !important;
+      z-index: 1 !important;
+      width: min(100%, 1080px) !important;
+      height: 100% !important;
+      min-height: 0 !important;
+      margin: 0 auto !important;
+      padding-top: clamp(54px, 8.8vh, 86px) !important;
+      padding-bottom: clamp(8px, 1.8vh, 18px) !important;
+      box-sizing: border-box !important;
+      transform: none !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: space-between !important;
+      gap: clamp(22px, 3.8vh, 42px) !important;
+      overflow: hidden !important;
+    }
+
+    #collectionDisplayPanel .collection-pedestal-row {
+      justify-content: center !important;
+      gap: clamp(16px, 2vw, 32px) !important;
+    }
+
+    #collectionDisplayPanel .collection-pedestal-row.back-row,
+    #collectionDisplayPanel .collection-pedestal-row.front-row {
+      top: auto !important;
+      margin-bottom: 0 !important;
+      transform: none !important;
+    }
+
+    #collectionDisplayPanel .collection-pedestal-item {
+      width: clamp(47px, 6.2vw, 78px) !important;
+      height: clamp(36px, 5.5vh, 57px) !important;
+    }
+
+    #collectionDisplayPanel .collection-pedestal-character {
+      bottom: 100% !important;
+    }
+
+    #collectionDisplayPanel .collection-pedestal-character-image {
+      max-height: clamp(26px, 4.7vh, 44px) !important;
+    }
+
+    .info-panel {
+      min-height: clamp(32px, 5.5vh, 44px);
+      max-height: 8vh;
+      overflow: hidden;
+      padding: clamp(4px, 0.65vh, 7px);
+      border: 1px solid #111111;
+      border-radius: 14px;
+      background: #ffffff;
+      font-size: clamp(7px, 0.95vh, 9px);
+      color: #111111;
+      line-height: 1.25;
+    }
+
+    .match-warning-panel {
+      max-height: 6.5vh;
+    }
+
+    .table-info-panels {
+      margin-top: clamp(5px, 0.75vh, 8px);
+    }
+
+    .info-panel-title {
+      margin: 0 0 clamp(2px, 0.4vh, 4px);
+      font-size: clamp(7px, 0.95vh, 9px);
+      color: #111111;
+      font-weight: bold;
+    }
+
+    .info-panel-list {
+      margin: 0;
+      padding-left: 16px;
+    }
+
+    .info-empty {
+      color: #7f8ba6;
+    }
+
+    .collection-kp-badge {
+      display: inline-flex;
+      align-items: center;
+      margin-left: 10px;
+      padding: 3px 7px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffe48a;
+      font-size: clamp(9px, 1.2vh, 11px);
+      font-weight: bold;
+      vertical-align: middle;
+    }
+
+    .collection-reset-button {
+      margin-left: 6px;
+      padding: 2px 6px;
+      border: 1px solid #111111;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #111111;
+      font-size: clamp(8px, 1vh, 10px);
+      font-weight: bold;
+      vertical-align: middle;
+      box-shadow: none;
+    }
+
+    .kp-earned-toast {
+      display: none;
+      position: fixed;
+      left: 50%;
+      top: 18%;
+      z-index: 12000;
+      transform: translateX(-50%);
+      padding: 12px 22px;
+      border: 2px solid rgba(255, 228, 138, 0.9);
+      border-radius: 999px;
+      background: rgba(10, 14, 24, 0.94);
+      color: #ffe48a;
+      font-size: clamp(20px, 3.2vh, 34px);
+      font-weight: bold;
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.42);
+      pointer-events: none;
+    }
+
+    .kp-earned-toast.is-open {
+      display: block;
+    }
+
+
+    @media (max-width: 980px) {
+      .top-area {
+        grid-template-columns: minmax(0, 1fr) max-content;
+      }
+
+      .top-right-area {
+        grid-template-columns: clamp(132px, 16vw, 160px) clamp(150px, 18vw, 190px) clamp(104px, 12vw, 128px);
+        grid-template-areas: "upgrade state bias";
+      }
+
+      .teams {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 6px;
+      }
+
+
+      .bias-guide {
+        position: static;
+        width: auto;
+      }
+
+      .match-info {
+        position: static;
+        width: auto;
+      }
+
+      .bottom-panels {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="app-shell">
+  <section class="top-area">
+    <div class="top-left-area">
+      <h1>
+        石橋ぶりぶりトラッカー
+        <span id="collectionKpText" class="collection-kp-badge">KP: 0</span>
+        <span id="collectionApText" class="collection-kp-badge">AP: 0</span>
+        <span id="ticket15CountText" class="collection-kp-badge ticket-count-badge">1.5倍チケット ×0</span>
+        <span id="ticket2CountText" class="collection-kp-badge ticket-count-badge">2倍チケット ×0</span>
+      </h1>
+      <div class="controls">
+        <button id="playersButton">更新</button>
+        <button id="autoButton">自動開始</button>
+        <button id="stopButton">停止</button>
+        <label class="ticket-use-option" style="display:none;"><input id="useTicket15" type="checkbox">1.5倍チケットを使う</label>
+        <label class="ticket-use-option" style="display:none;"><input id="useTicket2" type="checkbox">2倍チケットを使う</label>
+        <button id="competitiveKpButton">ポイントを獲得</button>
+        <button id="collectionDisplayButton">コレクション</button>
+        <button id="settingsButton" type="button" aria-label="設定">⚙</button>
+        <button id="skillUpButton" type="button">スキルUP</button>
+        <button id="collectionHatcheryButton">孵化場</button>
+      </div>
+
+      <div class="controls controls-secondary">
+      </div>
+
+      <p id="playersStatus" class="status">未確認</p>
+    </div>
+
+    <div class="top-right-area">
+      <div class="tracker-upgrade-box">
+        <button id="trackerUpgradeButton">トラッカーLvUP <span id="trackerLevelText">Lv.0</span></button>
+        <div id="trackerNextUnlockText" class="tracker-next-unlock">次：-</div>
+      </div>
+
+      <div class="match-info">
+        <span id="mapStatus">マップ: -</span>
+        <span id="autoStatus">自動: 停止中</span>
+        <span id="rateStatus">取得率: -</span>
+      </div>
+
+      <div class="bias-guide">
+        <p class="bias-guide-title">偏見ランク強さ順</p>
+        <ol class="bias-guide-list">
+          <li>ナメクジ</li>
+          <li>濡れティッシュ</li>
+          <li>迷子のヒヨコ</li>
+          <li>反抗期の一般兵</li>
+          <li>町内会エース</li>
+          <li>部活の先輩</li>
+          <li>エイムゴリラ</li>
+          <li>妖怪ワンタップ</li>
+          <li>機械</li>
+          <li>真理</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+  <div id="kpEarnedToast" class="kp-earned-toast"></div>
+
+  <div id="competitiveKpOverlay" class="competitive-kp-overlay">
+    <div id="competitiveKpPanel" class="competitive-kp-panel">
+      <div id="competitiveKpSkillSummary" class="competitive-kp-skill-summary"></div>
+      <div id="competitiveKpList" class="competitive-kp-list"></div>
+    </div>
+  </div>
+
+
+  <section class="tables-area">
+  <div class="teams">
+    <div class="team-box">
+      <h2 class="team-title">味方</h2>
+      <table>
+        <colgroup>
+          <col style="width: 7%;">
+          <col style="width: 17%;">
+          <col style="width: 12%;">
+          <col style="width: 13%;">
+          <col style="width: 13%;">
+          <col style="width: 7%;">
+          <col style="width: 6%;">
+          <col style="width: 9%;">
+          <col style="width: 16%;">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>PT</th>
+            <th>名前</th>
+            <th>評価</th>
+            <th>キャラ</th>
+            <th>ランク</th>
+            <th>HS率</th>
+            <th>KD</th>
+            <th>勝敗</th>
+            <th>最高</th>
+          </tr>
+        </thead>
+        <tbody id="bluePlayers"></tbody>
+      </table>
+    </div>
+
+    <div class="team-box">
+      <h2 class="team-title">敵</h2>
+      <table>
+        <colgroup>
+          <col style="width: 7%;">
+          <col style="width: 17%;">
+          <col style="width: 12%;">
+          <col style="width: 13%;">
+          <col style="width: 13%;">
+          <col style="width: 7%;">
+          <col style="width: 6%;">
+          <col style="width: 9%;">
+          <col style="width: 16%;">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>PT</th>
+            <th>名前</th>
+            <th>評価</th>
+            <th>キャラ</th>
+            <th>ランク</th>
+            <th>HS率</th>
+            <th>KD</th>
+            <th>勝敗</th>
+            <th>最高</th>
+          </tr>
+        </thead>
+        <tbody id="redPlayers"></tbody>
+      </table>
+    </div>
+  </div>
+    <div class="bottom-panels table-info-panels">
+      <div class="info-panel">
+        <p class="info-panel-title">味方のエントリー阻止スキル</p>
+        <div id="blueTeamFeatures" class="info-empty">未確認</div>
+      </div>
+      <div class="info-panel match-warning-panel">
+      <p class="info-panel-title">注意点</p>
+      <div id="matchWarnings" class="info-empty">未確認</div>
+      </div>
+      <div class="info-panel">
+        <p class="info-panel-title">敵のエントリー阻止スキル</p>
+        <div id="redTeamFeatures" class="info-empty">未確認</div>
+      </div>
+    </div>
+  </section>
+
+  <div id="collectionDisplayOverlay" class="collection-display-overlay">
+    <div id="collectionDisplayPanel" class="collection-display-panel">
+      <div class="collection-display-header">
+        <button id="collectionSeriesPrevButton" type="button" class="collection-series-button">◀</button>
+        <p id="collectionDisplayTitle" class="collection-display-title">コレクション シリーズ1</p>
+        <button id="collectionSeriesNextButton" type="button" class="collection-series-button">▶</button>
+      </div>
+      <div id="collectionSeriesSummary" class="collection-series-summary"></div>
+      <div id="collectionPedestalStage" class="collection-pedestal-stage"></div>
+    </div>
+  </div>
+
+  <div id="skillUpOverlay" class="collection-display-overlay">
+    <div id="skillUpPanel" class="collection-panel skill-up-panel">
+      <p class="collection-panel-title">スキルUP</p>
+      <div id="skillUpList" class="skill-up-list"></div>
+    </div>
+  </div>
+
+  <div id="collectionHatcheryOverlay" class="collection-display-overlay">
+    <div id="collectionHatcheryPanel" class="collection-panel">
+      <p class="collection-panel-title">孵化場</p>
+      <div id="collectionEggVisual" class="collection-egg-visual"></div>
+      <div id="collectionEggInfo" class="collection-egg-info">卵なし</div>
+      <div class="collection-panel-actions">
+        <button id="collectionSummonEggButton">卵召喚 -10KP</button>
+        <button id="collectionHatchEggButton">孵化する -15KP</button>
+      </div>
+    </div>
+  </div>
+  </main>
+
+  <div id="settingsOverlay" class="settings-overlay">
+    <div id="settingsPanel" class="settings-panel">
+      <div class="settings-panel-header">設定</div>
+      <label class="settings-slider-row">
+        <span>画面の透明度 <b id="opacityValueText">0%</b></span>
+        <input id="opacitySlider" type="range" min="0" max="100" step="1" value="0">
+      </label>
+      <div class="admin-pin-row">
+        <input id="adminPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="管理者PIN">
+        <button id="adminPinButton" type="button">管理者</button>
+      </div>
+      <div id="adminPinStatus" class="admin-pin-status"></div>
+      <div id="adminPanel" class="admin-panel">
+        <div id="adminListPanel" class="admin-list-panel">
+          <div class="admin-panel-header">
+            <span>管理者パネル</span>
+            <div class="admin-panel-actions">
+              <button id="adminRefreshButton" type="button">更新</button>
+              <button id="adminBulkSendButton" type="button">一括送信</button>
+              <button id="adminImplementationTestButton" type="button">実装テスト</button>
+            </div>
+          </div>
+          <div id="adminUsersList" class="admin-users-list"></div>
+        </div>
+        <div id="adminImplementationTestPanel" class="admin-implementation-test-panel">
+          <div class="admin-panel-header">
+            <span>実装テスト</span>
+            <button id="adminImplementationTestBackButton" type="button">アカウント一覧に戻る</button>
+          </div>
+          <div class="admin-send-section">
+            <strong>保存・復元</strong>
+            <button id="adminTestSaveButton" type="button">現在状態を保存</button>
+            <button id="adminTestRestoreButton" type="button">保存状態を呼び出し</button>
+          </div>
+          <div class="admin-send-section">
+            <strong>初期化</strong>
+            <button id="adminTestResetLevelButton" type="button">トラッカーレベル初期化</button>
+            <button id="adminTestResetItemsButton" type="button">アイテム初期化</button>
+            <button id="adminTestResetCollectionButton" type="button">コレクション初期化</button>
+          </div>
+          <div id="adminImplementationTestStatus" class="admin-pin-status"></div>
+        </div>
+        <div id="adminSendPanel" class="admin-send-panel">
+          <div class="admin-panel-header">
+            <span id="adminSendTargetLabel">送信画面</span>
+            <button id="adminBackButton" type="button">アカウント一覧に戻る</button>
+          </div>
+          <div class="admin-send-section">
+            <strong>メッセージ送信</strong>
+            <input id="adminMessageTitleInput" type="text" placeholder="タイトル">
+            <textarea id="adminMessageBodyInput" rows="3" placeholder="メッセージ"></textarea>
+            <button id="adminSendMessageButton" type="button">送信</button>
+          </div>
+          <div class="admin-send-section">
+            <strong>アイテム送信</strong>
+            <label><input class="admin-item-check" data-field="kp" type="checkbox"> KP <input id="adminItemKpInput" type="number" min="0" value="0"></label>
+            <label><input class="admin-item-check" data-field="ap" type="checkbox"> AP <input id="adminItemApInput" type="number" min="0" value="0"></label>
+            <label><input class="admin-item-check" data-field="ticket15" type="checkbox"> 1.5倍チケット <input id="adminItemTicket15Input" type="number" min="0" value="0"></label>
+            <label><input class="admin-item-check" data-field="ticket2" type="checkbox"> 2倍チケット <input id="adminItemTicket2Input" type="number" min="0" value="0"></label>
+            <button id="adminSendItemButton" type="button">送信</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="effect.js"></script>
+  <script src="collection-comments.js"></script>
+  <script src="collection-game.js"></script>
+  <script>
+    function toggleSettingsPanel(event) {
+      if (event) event.preventDefault();
+      if (event) event.stopPropagation();
+      const overlay = document.getElementById("settingsOverlay");
+      const panel = document.getElementById("settingsPanel");
+      if (!panel) return;
+      const isOpen = panel.classList.toggle("is-open");
+      if (overlay) overlay.classList.toggle("is-open", isOpen);
+      panel.style.display = isOpen ? "flex" : "none";
+    }
+
+    const playersButton = document.getElementById("playersButton");
+    const autoButton = document.getElementById("autoButton");
+    const stopButton = document.getElementById("stopButton");
+    const settingsButton = document.getElementById("settingsButton");
+    const settingsOverlay = document.getElementById("settingsOverlay");
+    const competitiveKpButton = document.getElementById("competitiveKpButton");
+    const competitiveKpOverlay = document.getElementById("competitiveKpOverlay");
+    const competitiveKpPanel = document.getElementById("competitiveKpPanel");
+    const competitiveKpSkillSummary = document.getElementById("competitiveKpSkillSummary");
+    const competitiveKpList = document.getElementById("competitiveKpList");
+    const settingsPanel = document.getElementById("settingsPanel");
+    const opacitySlider = document.getElementById("opacitySlider");
+    const opacityValueText = document.getElementById("opacityValueText");
+    const adminPinInput = document.getElementById("adminPinInput");
+    const adminPinButton = document.getElementById("adminPinButton");
+    const adminPinStatus = document.getElementById("adminPinStatus");
+    const adminPanel = document.getElementById("adminPanel");
+    const adminRefreshButton = document.getElementById("adminRefreshButton");
+    const adminBulkSendButton = document.getElementById("adminBulkSendButton");
+    const adminImplementationTestButton = document.getElementById("adminImplementationTestButton");
+    const adminUsersList = document.getElementById("adminUsersList");
+    const adminListPanel = document.getElementById("adminListPanel");
+    const adminImplementationTestPanel = document.getElementById("adminImplementationTestPanel");
+    const adminImplementationTestBackButton = document.getElementById("adminImplementationTestBackButton");
+    const adminImplementationTestStatus = document.getElementById("adminImplementationTestStatus");
+    const adminTestSaveButton = document.getElementById("adminTestSaveButton");
+    const adminTestRestoreButton = document.getElementById("adminTestRestoreButton");
+    const adminTestResetLevelButton = document.getElementById("adminTestResetLevelButton");
+    const adminTestResetItemsButton = document.getElementById("adminTestResetItemsButton");
+    const adminTestResetCollectionButton = document.getElementById("adminTestResetCollectionButton");
+    const adminSendPanel = document.getElementById("adminSendPanel");
+    const adminSendTargetLabel = document.getElementById("adminSendTargetLabel");
+    const adminBackButton = document.getElementById("adminBackButton");
+    const adminMessageTitleInput = document.getElementById("adminMessageTitleInput");
+    const adminMessageBodyInput = document.getElementById("adminMessageBodyInput");
+    const adminSendMessageButton = document.getElementById("adminSendMessageButton");
+    const adminSendItemButton = document.getElementById("adminSendItemButton");
+
+    const playersStatus = document.getElementById("playersStatus");
+
+    const bluePlayers = document.getElementById("bluePlayers");
+    const redPlayers = document.getElementById("redPlayers");
+    const mapStatus = document.getElementById("mapStatus");
+    const autoStatus = document.getElementById("autoStatus");
+    const rateStatus = document.getElementById("rateStatus");
+    const blueTeamFeatures = document.getElementById("blueTeamFeatures");
+    const redTeamFeatures = document.getElementById("redTeamFeatures");
+    const matchWarnings = document.getElementById("matchWarnings");
+
+    let isLoadingPlayers = false;
+    let currentMapName = "-";
+    let currentGrowthItems = [];
+    let kpEarnedToastTimer = null;
+    let isDetailFetchingView = false;
+    let playersButtonUnlockTimer = null;
+    let currentAdminSendTarget = null;
+    let currentAdminActionMode = "send";
+    let currentAdminUsersSnapshot = [];
+
+    const ENTRY_DENIAL_SKILLS = {
+      "KAY/O": "フラグメント",
+      "アイソ": "アンダーカット",
+      "アストラ": "グラビティウェル",
+      "ウェイレイ": "スロウ",
+      "オーメン": "パラノイア",
+      "キルジョイ": "ナノスワーム",
+      "クローヴ": "メドル",
+      "ゲッコー": "モッシュピット",
+      "セージ": "スロウオーブ",
+      "テホ": "誘導サルヴォ",
+      "デッドロック": "グラヴィネット",
+      "ネオン": "リレーボルト",
+      "フェイド": "シーズ",
+      "フェニックス": "ホットハンド",
+      "ブリムストーン": "インセンディアリー",
+      "ブリーチ": "フォールトライン / アフターショック",
+      "ミクス": "M-パルス",
+      "レイズ": "ペイント弾",
+      "ヴァイス": "シアー / レイザーヴァイン",
+      "ヴァイパー": "スネークバイト"
+    };
+
+    const SENTINEL_AGENTS = ["キルジョイ", "サイファー", "チェンバー", "デッドロック", "ヴァイス"]; 
+
+    function cleanValue(value) {
+      if (value === null || value === undefined || value === "") return "-";
+      const text = String(value);
+      if (text === "Unknown#----" || text === "Unknown") return "非公開";
+      if (text.includes("API") && text.includes("error")) return "-";
+      return value;
+    }
+
+    function getAutoDisplayStatus(status, mode = "") {
+      const text = String(status || "");
+      const modeText = String(mode || "");
+
+      if (text.includes("停止") || text.includes("停止中")) return "停止中";
+      if (text.includes("キャラピック") || modeText.includes("キャラピック")) return "キャラピック中";
+      if (text.includes("試合中") || modeText.includes("試合中")) return "試合中";
+      return "試合待機中";
+    }
+
+    function setAutoDisplayStatus(status, mode = "") {
+      autoStatus.textContent = "閾ｪ蜍・ " + getAutoDisplayStatus(status, mode);
+    }
+
+    function getRankHtml(player) {
+      const rank = cleanValue(player.rank);
+
+      if (player.rankImage && rank !== "未ランク" && rank !== "-") {
+        return `
+          <div class="rank-cell">
+            <img class="rank-icon" src="${player.rankImage}" alt="${rank}" onerror="this.onerror=null; this.src=this.src.replace('ダイヤモンド','ダイヤ');">
+            <span>${rank}</span>
+          </div>
+        `;
+      }
+
+      return rank;
+    }
+
+    function getPeakRankHtml(player) {
+      const peakRank = cleanValue(player.peakRank);
+
+      if (player.peakRankImage && peakRank !== "未ランク" && peakRank !== "-") {
+        return `
+          <div class="rank-cell">
+            <img class="rank-icon" src="${player.peakRankImage}" alt="${peakRank}" onerror="this.onerror=null; this.src=this.src.replace('ダイヤモンド','ダイヤ');">
+            <span>${peakRank}</span>
+          </div>
+        `;
+      }
+
+      return peakRank;
+    }
+
+    function getBiasHtml(player) {
+      const biasRank = cleanValue(player.biasRank);
+      const topRanks = ["機械", "真理"];
+      const highRanks = ["エイムゴリラ", "妖怪ワンタップ"];
+      const midRanks = ["町内会エース", "部活の先輩"];
+      let className = "bias-low";
+
+      if (topRanks.includes(biasRank)) {
+        className = "bias-top";
+      } else if (highRanks.includes(biasRank)) {
+        className = "bias-high";
+      } else if (midRanks.includes(biasRank)) {
+        className = "bias-mid";
+      }
+
+      return `<span class="bias-badge ${className}">${biasRank}</span>`;
+    }
+
+    function getAgentHtml(player) {
+      const agentName = cleanValue(player.characterName);
+
+      if (player.characterImage && agentName !== "未選択" && agentName !== "-") {
+        return `
+          <div class="agent-cell">
+            <img class="agent-icon" src="${player.characterImage}" alt="${agentName}">
+            <span>${agentName}</span>
+          </div>
+        `;
+      }
+
+      return agentName;
+    }
+
+    function ensurePlayerRows(target) {
+      while (target.children.length < 5) {
+        const row = document.createElement("tr");
+        row.className = "placeholder-player-row";
+        target.appendChild(row);
+      }
+    }
+
+    function getPlaceholderRankHtml() {
+      return `
+        <div class="rank-cell">
+          <span class="rank-icon placeholder-icon"></span>
+          <span>-</span>
+        </div>
+      `;
+    }
+
+    function getPlaceholderAgentHtml() {
+      return `
+        <div class="agent-cell">
+          <span class="agent-icon placeholder-icon"></span>
+          <span>-</span>
+        </div>
+      `;
+    }
+
+    function getPlayerRowHtml(player, isDeathmatch = false) {
+      if (!player) {
+        return `
+          <td>-</td>
+          <td class="name" title="-">-</td>
+          <td><span class="bias-badge">-</span></td>
+          ${isDeathmatch ? "" : `<td>${getPlaceholderAgentHtml()}</td>`}
+          <td>${getPlaceholderRankHtml()}</td>
+          ${isDeathmatch ? "" : "<td>-</td>"}
+          ${isDeathmatch ? "" : "<td>-</td>"}
+          ${isDeathmatch ? "" : "<td>-</td>"}
+          <td>${getPlaceholderRankHtml()}</td>
+        `;
+      }
+
+      return `
+        <td>${cleanValue(player.estimatedPartyLabel || player.partyLabel)}</td>
+        <td class="name" title="${cleanValue(player.name)}">${cleanValue(player.name)}</td>
+        <td>${getBiasHtml(player)}</td>
+        ${isDeathmatch ? "" : `<td>${getAgentHtml(player)}</td>`}
+        <td>${getRankHtml(player)}</td>
+        ${isDeathmatch ? "" : `<td>${cleanValue(player.hsRate)}</td>`}
+        ${isDeathmatch ? "" : `<td>${cleanValue(player.kd)}</td>`}
+        ${isDeathmatch ? "" : `<td>${cleanValue(player.recentResults)}</td>`}
+        <td>${getPeakRankHtml(player)}</td>
+      `;
+    }
+
+    function setDeathmatchView(isDeathmatch) {
+      document.querySelectorAll("th").forEach((th) => {
+        const text = th.textContent.trim();
+        const hide = ["PT", "キャラ", "HS率", "KD", "勝敗"].includes(text);
+        th.style.display = isDeathmatch && hide ? "none" : "";
+      });
+    }
+
+    function updateSelfKillBox() {
+    }
+
+    function showKpEarnedToast(amount) {
+      const toast = document.getElementById("kpEarnedToast");
+      if (!toast) return;
+      toast.textContent = typeof amount === "string" ? amount + "獲得" : amount + "KP獲得";
+      toast.classList.add("is-open");
+      if (kpEarnedToastTimer) clearTimeout(kpEarnedToastTimer);
+      kpEarnedToastTimer = setTimeout(() => {
+        toast.classList.remove("is-open");
+      }, 5000);
+    }
+
+    function renderCompetitiveKpSkillSummary() {
+      if (!competitiveKpSkillSummary) return;
+      const summary = window.collectionGame?.getPointBonusSummary ? window.collectionGame.getPointBonusSummary() : null;
+      const items = [];
+      if (Number(summary?.kpChance) > 0) items.push(`おまけKP確率 ${summary.kpChance}%`);
+      if (Number(summary?.apChance) > 0) items.push(`おまけAP確率 ${summary.apChance}%`);
+      if (Number(summary?.rouletteChance) > 0) items.push(`ルーレット率 ${summary.rouletteChance}%`);
+      competitiveKpSkillSummary.innerHTML = items.length ? items.map((item) => `<span>${item}</span>`).join("") : "";
+      competitiveKpSkillSummary.style.display = items.length ? "flex" : "none";
+    }
+
+    function renderCompetitiveKpMatches(matches) {
+      if (!competitiveKpList) return;
+      if (!Array.isArray(matches) || !matches.length) {
+        competitiveKpList.innerHTML = `<div class="competitive-kp-message">読み込める試合がありません。</div>`;
+        return;
+      }
+      competitiveKpList.innerHTML = matches.map((match) => {
+        const isClaimed = Boolean(match.isClaimed);
+        const kills = Number(match.kills || 0);
+        const assists = Number(match.assists || 0);
+        const buttonText = isClaimed ? "獲得済み" : "獲得";
+        return `
+          <div class="competitive-kp-item">
+            <img class="competitive-kp-agent" src="${match.agentImage || ""}" alt="${match.agentName || "-"}">
+            <div class="competitive-kp-main">
+              <div class="competitive-kp-map">${cleanValue(match.mapName)}</div>
+              <div class="competitive-kp-date">${cleanValue(match.displayDate)}</div>
+              <div class="competitive-kp-date">${cleanValue(match.agentName)} / ${kills}K / ${assists}A</div>
+            </div>
+            <div class="competitive-kp-actions">
+              <div class="competitive-kp-kills">${kills}KP / ${assists}AP</div>
+              <button type="button" class="competitive-kp-claim-button ${isClaimed ? "is-claimed" : ""}" data-match-id="${match.matchId || ""}" ${isClaimed ? "disabled" : ""}>${buttonText}</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderCompetitiveKpLoading() {
+      if (!competitiveKpList) return;
+      competitiveKpList.innerHTML = `<div class="competitive-kp-message">試合読み込み中</div>`;
+    }
+
+    function renderCompetitiveKpError() {
+      if (!competitiveKpList) return;
+      competitiveKpList.innerHTML = `
+        <div class="competitive-kp-message competitive-kp-error">
+          <div>読み込みに失敗しました。</div>
+          <div class="competitive-kp-cause-title">原因かも</div>
+          <div>VALORANTを起動してる？</div>
+          <div>VALORANTを起動して更新を押した後に自動開始を押してもう一度試してください</div>
+        </div>
+      `;
+    }
+
+    async function openCompetitiveKpPanel() {
+      if (!competitiveKpOverlay || !competitiveKpPanel || !competitiveKpList) return;
+      competitiveKpOverlay.classList.add("is-open");
+      competitiveKpPanel.classList.add("is-open");
+      renderCompetitiveKpSkillSummary();
+      renderCompetitiveKpLoading();
+
+      try {
+        const syncResult = await syncFirebaseNow();
+        if (syncResult?.blocked) {
+          competitiveKpList.innerHTML = `<div class="competitive-kp-message competitive-kp-error">${syncResult.message || "このアカウントは利用停止中です。"}</div>`;
+          return;
+        }
+        if (!window.trackerValorantApi.getCompetitiveKpMatches) {
+          renderCompetitiveKpError();
+          return;
+        }
+        const result = await window.trackerValorantApi.getCompetitiveKpMatches();
+        if (!result?.ok) {
+          renderCompetitiveKpError();
+          return;
+        }
+        renderCompetitiveKpMatches(result.matches || []);
+      } catch (error) {
+        renderCompetitiveKpError();
+      }
+    }
+
+    function closeCompetitiveKpPanel() {
+      if (competitiveKpOverlay) competitiveKpOverlay.classList.remove("is-open");
+      if (competitiveKpPanel) competitiveKpPanel.classList.remove("is-open");
+    }
+
+    
+
+    async function claimCompetitiveKp(matchId, button) {
+      if (!matchId || !button) return;
+      if (!window.trackerValorantApi.claimCompetitiveKp) return;
+
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = "獲得中...";
+
+      try {
+        const syncResult = await syncFirebaseNow();
+        if (syncResult?.blocked) {
+          button.disabled = false;
+          button.textContent = originalText;
+          return;
+        }
+        const result = await window.trackerValorantApi.claimCompetitiveKp(matchId);
+        if (!result?.ok) {
+          button.disabled = false;
+          button.textContent = originalText;
+          return;
+        }
+        button.textContent = "獲得済み";
+        button.classList.add("is-claimed");
+        button.disabled = true;
+        if (window.collectionGame?.claimMatchReward) {
+          const reward = window.collectionGame.claimMatchReward({
+            kpEarned: Number(result.kpEarned) || 0,
+            apEarned: Number(result.apEarned) || 0,
+            matchId: result.claimedMatchId || matchId
+          });
+          showKpEarnedToast(`${reward.kp}KP / ${reward.ap}AP`);
+        }
+        syncFirebaseQuietly();
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = "獲得失敗";
+      }
+    }
+
+    function applyPlayersPayload(data, progressText = "") {
+      const currentProgressText = progressText || data.progressText || "取得中";
+      isDetailFetchingView = String(currentProgressText).includes("詳細") || String(currentProgressText).includes("取得");
+      playersStatus.textContent = currentProgressText;
+      currentMapName = cleanValue(data.mapName);
+      const modeLabel = cleanValue(data.modeLabel || data.mode || "-");
+      mapStatus.textContent = "マップ: " + currentMapName + " / モード: " + modeLabel;
+      setAutoDisplayStatus(data.autoStatus, modeLabel);
+      rateStatus.textContent = "取得頻度: " + cleanValue(data.fetchRate);
+      currentGrowthItems = Array.isArray(data.growthItems) ? data.growthItems : [];
+      updateSelfKillBox(data);
+      renderPlayers(data.players || [], data.isDeathmatch);
+      if (Number(data.kpEarned) > 0) {
+        const kpEarned = Number(data.kpEarned);
+        window.dispatchEvent(new CustomEvent("collection:add-kp", { detail: { amount: kpEarned, reason: "コンペ試合報酬" } }));
+        showKpEarnedToast(kpEarned);
+      }
+    }
+
+    function renderInfoList(element, items) {
+      if (!element) return;
+      if (!items.length) {
+        element.className = "info-empty";
+        element.textContent = "該当なし";
+        return;
+      }
+
+      element.className = "";
+      element.innerHTML = `<ul class="info-panel-list">${items.map((item) => `<li>${item}</li>`).join("")}</ul>`;
+    }
+
+    function getEntryDenialItems(players) {
+      return players
+        .map((player) => {
+          const agentName = cleanValue(player.characterName);
+          const skillName = ENTRY_DENIAL_SKILLS[agentName];
+          return skillName ? `${agentName}：${skillName}` : "";
+        })
+        .filter(Boolean);
+    }
+
+    function getMatchWarnings(redTeamPlayers) {
+      const enemyAgents = redTeamPlayers.map((player) => cleanValue(player.characterName));
+      const hasEnemy = (agentName) => enemyAgents.includes(agentName);
+      const warnings = [];
+
+      if (currentMapName === "アセント" && hasEnemy("フェニックス")) {
+        warnings.push("アセント / 敵フェニックス：Aメインのホットハンド定点注意");
+      }
+
+      if (hasEnemy("フェイド") && hasEnemy("レイズ")) {
+        warnings.push("敵フェイド＋レイズ：シーズペイント弾注意");
+      }
+
+      if (hasEnemy("キルジョイ") && hasEnemy("ブリムストーン")) {
+        warnings.push("敵キルジョイ＋ブリム：設置後ナノスワーム・モロトフ注意");
+      }
+
+      if (!enemyAgents.some((agentName) => SENTINEL_AGENTS.includes(agentName))) {
+        warnings.push("敵にセンチネルなし：裏取りが通りやすい");
+      }
+
+      return warnings;
+    }
+
+    function updateTeamInfoPanels(players) {
+      const blueTeamPlayers = players.filter((player) => player.sideLabel === "味方");
+      const redTeamPlayers = players.filter((player) => player.sideLabel !== "味方");
+
+      renderInfoList(blueTeamFeatures, getEntryDenialItems(blueTeamPlayers));
+      renderInfoList(redTeamFeatures, getEntryDenialItems(redTeamPlayers));
+      renderInfoList(matchWarnings, currentGrowthItems.length ? currentGrowthItems : getMatchWarnings(redTeamPlayers));
+    }
+
+    function renderPlayers(players, isDeathmatch = false) {
+      ensurePlayerRows(bluePlayers);
+      ensurePlayerRows(redPlayers);
+      setDeathmatchView(isDeathmatch);
+      updateTeamInfoPanels(players);
+      const blueTeamPlayers = players.filter((player) => player.sideLabel === "味方");
+      const redTeamPlayers = players.filter((player) => player.sideLabel !== "味方");
+
+      Array.from(bluePlayers.children).forEach((row, index) => {
+        const player = blueTeamPlayers[index] || null;
+        row.classList.toggle("placeholder-player-row", !player);
+        row.innerHTML = getPlayerRowHtml(player, isDeathmatch);
+      });
+
+      Array.from(redPlayers.children).forEach((row, index) => {
+        const player = redTeamPlayers[index] || null;
+        row.classList.toggle("placeholder-player-row", !player);
+        row.innerHTML = getPlayerRowHtml(player, isDeathmatch);
+      });
+    }
+
+    renderPlayers([], false);
+
+    window.trackerValorantApi = window.valorantApi ? window.valorantApi : Object.create(null);
+
+    if (window.trackerValorantApi.onPlayersProgress) {
+      window.trackerValorantApi.onPlayersProgress((data) => {
+        applyPlayersPayload(data, data.progressText);
+      });
+    }
+
+    if (window.trackerValorantApi.onAutoStatus) {
+      window.trackerValorantApi.onAutoStatus((data) => {
+        const statusText = cleanValue(data.status);
+        const detailText = cleanValue(data.fetchRate || "");
+        setAutoDisplayStatus(statusText);
+        if (data.fetchRate) rateStatus.textContent = "取得頻度: " + detailText;
+        if (statusText && statusText !== "-") {
+          playersStatus.textContent = detailText && detailText !== "-" ? statusText + " / " + detailText : statusText;
+        }
+        const kpMatch = String(statusText).match(/[0-9]+KP/);
+        if (kpMatch) showKpEarnedToast(Number(kpMatch[0].replace("KP", "")));
+      });
+    }
+
+    autoButton.addEventListener("click", async () => {
+      setAutoDisplayStatus("試合待機中");
+      const syncResult = await syncFirebaseNow();
+      if (syncResult?.blocked) {
+        playersStatus.textContent = syncResult.message || "このアカウントは利用停止中です。";
+        setAutoDisplayStatus("停止中");
+        return;
+      }
+      if (!window.trackerValorantApi.startAutoWatch) {
+        setAutoDisplayStatus("停止中");
+        return;
+      }
+      const result = await window.trackerValorantApi.startAutoWatch();
+      if (result?.blocked) {
+        playersStatus.textContent = result.message || "このアカウントは利用停止中です。";
+      }
+      setAutoDisplayStatus(result.ok ? "試合待機中" : "停止中");
+    });
+
+    stopButton.addEventListener("click", async () => {
+      if (!window.trackerValorantApi.stopAutoWatch) {
+        setAutoDisplayStatus("停止中");
+        return;
+      }
+
+      const result = await window.trackerValorantApi.stopAutoWatch();
+      setAutoDisplayStatus("停止中");
+    });
+
+    if (settingsPanel) {
+      settingsPanel.classList.remove("is-open");
+      settingsPanel.style.display = "none";
+    }
+    if (settingsOverlay) settingsOverlay.classList.remove("is-open");
+
+    if (settingsButton) {
+      settingsButton.addEventListener("click", toggleSettingsPanel);
+    }
+
+    if (settingsOverlay) {
+      settingsOverlay.addEventListener("click", (event) => {
+        if (event.target !== settingsOverlay) return;
+        settingsOverlay.classList.remove("is-open");
+        if (settingsPanel) {
+          settingsPanel.classList.remove("is-open");
+          settingsPanel.style.display = "none";
+        }
+      });
+    }
+
+    if (competitiveKpButton) {
+      competitiveKpButton.addEventListener("click", openCompetitiveKpPanel);
+    }
+
+    if (competitiveKpOverlay) {
+      competitiveKpOverlay.addEventListener("click", (event) => {
+        if (event.target === competitiveKpOverlay) closeCompetitiveKpPanel();
+      });
+    }
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeCompetitiveKpPanel();
+    });
+
+    if (competitiveKpList) {
+      competitiveKpList.addEventListener("click", async (event) => {
+        const button = event.target.closest(".competitive-kp-claim-button");
+        if (!button) return;
+        await claimCompetitiveKp(button.dataset.matchId || "", button);
+      });
+    }
+
+    function sliderValueToOpacity(value) {
+      const percent = Math.max(0, Math.min(100, Number(value) || 0));
+      return 1 - (percent / 100) * 0.7;
+    }
+
+    async function applyOpacitySetting(value) {
+      const percent = Math.max(0, Math.min(100, Number(value) || 0));
+      const opacity = sliderValueToOpacity(percent);
+      if (opacityValueText) opacityValueText.textContent = `${percent}%`;
+
+      if (window.trackerValorantApi.setWindowOpacity) {
+        await window.trackerValorantApi.setWindowOpacity(opacity);
+      }
+    }
+
+    if (opacitySlider) {
+      opacitySlider.addEventListener("change", () => applyOpacitySetting(opacitySlider.value));
+      opacitySlider.addEventListener("input", () => applyOpacitySetting(opacitySlider.value));
+    }
+
+    function getFirebaseInventory() {
+      const state = window.collectionGame?.getState ? window.collectionGame.getState() : {};
+      const characterCounts = state.characterCounts || {};
+      const ownedCharacterIds = Array.isArray(state.ownedCharacterIds) ? state.ownedCharacterIds : Object.keys(characterCounts);
+      return {
+        kp: Number(state.kp || 0),
+        ap: Number(state.ap || 0),
+        ticket15: Number(state.tickets?.multiplier15 || 0),
+        ticket2: Number(state.tickets?.multiplier2 || 0),
+        trackerLevel: Number(state.trackerLevel || 0),
+        skillsJson: JSON.stringify(state.skills || {}),
+        eggJson: JSON.stringify(state.egg || null),
+        ownedCharacterIdsJson: JSON.stringify(ownedCharacterIds),
+        characterCountsJson: JSON.stringify(characterCounts),
+        ownedCharacterCount: ownedCharacterIds.length,
+        series4Unlocked: Boolean(state.series4Unlocked)
+      };
+    }
+
+    function setToolBlocked(blocked, message = "") {
+      const text = message || "このアカウントは利用停止中です。";
+      if (blocked && playersStatus) playersStatus.textContent = text;
+      if (playersButton) playersButton.disabled = Boolean(blocked);
+      if (autoButton) autoButton.disabled = Boolean(blocked);
+      if (competitiveKpButton) competitiveKpButton.disabled = Boolean(blocked);
+    }
+
+    function describeInboxItem(item) {
+      const parts = [];
+      if (Number(item.kp) > 0) parts.push(`KP ${Number(item.kp)}`);
+      if (Number(item.ap) > 0) parts.push(`AP ${Number(item.ap)}`);
+      if (Number(item.ticket15) > 0) parts.push(`1.5倍チケット ${Number(item.ticket15)}枚`);
+      if (Number(item.ticket2) > 0) parts.push(`2倍チケット ${Number(item.ticket2)}枚`);
+      return parts.length ? `${parts.join(" / ")}を受け取りました！` : "アイテムを受け取りました！";
+    }
+
+    function describeConfiscationItem(item) {
+      const parts = [];
+      if (Number(item.kp) > 0) parts.push(`KP ${Number(item.kp)}`);
+      if (Number(item.ap) > 0) parts.push(`AP ${Number(item.ap)}`);
+      if (Number(item.ticket15) > 0) parts.push(`1.5倍チケット ${Number(item.ticket15)}枚`);
+      if (Number(item.ticket2) > 0) parts.push(`2倍チケット ${Number(item.ticket2)}枚`);
+      return parts.length ? `${parts.join(" / ")}が没収されました。` : "アイテムが没収されました。";
+    }
+
+    function showFirebaseInboxQueue(items) {
+      const queue = Array.isArray(items) ? [...items] : [];
+      if (!queue.length) return;
+
+      let overlay = document.getElementById("firebaseInboxOverlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "firebaseInboxOverlay";
+        overlay.className = "firebase-inbox-overlay";
+        document.body.appendChild(overlay);
+      }
+
+      const showNext = () => {
+        const item = queue.shift();
+        if (!item) {
+          overlay.classList.remove("is-open");
+          overlay.innerHTML = "";
+          return;
+        }
+
+        const isItem = item.type === "item";
+        const isConfiscate = item.type === "confiscate";
+        overlay.innerHTML = `
+          <div class="firebase-inbox-card">
+            <div class="firebase-inbox-title">${isItem ? "アイテム受取" : isConfiscate ? "アイテム没収" : cleanValue(item.title || "メッセージ")}</div>
+            <div class="firebase-inbox-body">${isItem ? describeInboxItem(item) : isConfiscate ? describeConfiscationItem(item) : cleanValue(item.message || "")}</div>
+            <button id="firebaseInboxActionButton" type="button">${isItem ? "受け取る" : "閉じる"}</button>
+          </div>
+        `;
+        overlay.classList.add("is-open");
+        const actionButton = document.getElementById("firebaseInboxActionButton");
+        if (actionButton) {
+          actionButton.addEventListener("click", async () => {
+            if (isItem && window.collectionGame?.addRewards) {
+              window.collectionGame.addRewards({
+                kp: item.kp,
+                ap: item.ap,
+                ticket15: item.ticket15,
+                ticket2: item.ticket2
+              }, describeInboxItem(item));
+            }
+            if (isConfiscate && window.collectionGame?.confiscateRewards) {
+              window.collectionGame.confiscateRewards({
+                kp: item.kp,
+                ap: item.ap,
+                ticket15: item.ticket15,
+                ticket2: item.ticket2
+              }, describeConfiscationItem(item));
+            }
+            if (item.name && window.trackerValorantApi.deleteFirebaseInboxItem) {
+              try { await window.trackerValorantApi.deleteFirebaseInboxItem(item.name); } catch (error) {}
+            }
+            syncFirebaseQuietly();
+            showNext();
+          }, { once: true });
+        }
+      };
+
+      showNext();
+    }
+
+    async function syncFirebaseNow() {
+      if (!window.trackerValorantApi.syncFirebaseAccount) return { ok: false };
+      try {
+        const result = await window.trackerValorantApi.syncFirebaseAccount(getFirebaseInventory());
+        if (result?.ok) {
+          setToolBlocked(Boolean(result.blocked), result.message || "");
+          showFirebaseInboxQueue(result.inbox || []);
+        }
+        return result;
+      } catch (error) {
+        return { ok: false, message: error.message || "Firebase接続に失敗しました" };
+      }
+    }
+
+    function syncFirebaseQuietly() {
+      syncFirebaseNow().catch(() => {});
+    }
+
+    window.addEventListener("collection:firebase-sync", () => {
+      syncFirebaseQuietly();
+    });
+
+    function formatAdminDate(value) {
+      const date = value ? new Date(value) : null;
+      if (!date || Number.isNaN(date.getTime())) return "-";
+      return date.toLocaleString("ja-JP", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+    }
+
+    function showAdminListView() {
+      currentAdminSendTarget = null;
+      currentAdminActionMode = "send";
+      if (adminListPanel) adminListPanel.style.display = "grid";
+      if (adminImplementationTestPanel) adminImplementationTestPanel.style.display = "none";
+      if (adminSendPanel) adminSendPanel.style.display = "none";
+      if (adminSendTargetLabel) adminSendTargetLabel.textContent = "送信画面";
+      if (adminSendItemButton) adminSendItemButton.textContent = "送信";
+    }
+
+    function showAdminImplementationTestView() {
+      currentAdminSendTarget = null;
+      currentAdminActionMode = "test";
+      if (adminListPanel) adminListPanel.style.display = "none";
+      if (adminSendPanel) adminSendPanel.style.display = "none";
+      if (adminImplementationTestPanel) adminImplementationTestPanel.style.display = "grid";
+      if (adminImplementationTestStatus) adminImplementationTestStatus.textContent = "";
+    }
+
+    function showAdminSendView(target, mode = "send") {
+      currentAdminSendTarget = target;
+      currentAdminActionMode = mode;
+      if (adminListPanel) adminListPanel.style.display = "none";
+      if (adminImplementationTestPanel) adminImplementationTestPanel.style.display = "none";
+      if (adminSendPanel) adminSendPanel.style.display = "grid";
+      if (adminSendTargetLabel) {
+        if (mode === "confiscate") {
+          adminSendTargetLabel.textContent = `${target?.riotId || "-"} から没収`;
+        } else {
+          adminSendTargetLabel.textContent = target?.bulk ? "一括送信" : `${target?.riotId || "-"} に送信`;
+        }
+      }
+      if (adminSendItemButton) adminSendItemButton.textContent = mode === "confiscate" ? "没収" : "送信";
+    }
+
+    function renderAdminUsers(users) {
+      if (!adminUsersList) return;
+      currentAdminUsersSnapshot = Array.isArray(users) ? JSON.parse(JSON.stringify(users)) : [];
+      if (!Array.isArray(users) || !users.length) {
+        adminUsersList.innerHTML = `<div class="admin-empty">まだ使用アカウントがありません</div>`;
+        return;
+      }
+
+      adminUsersList.innerHTML = users.map((user) => {
+        const puuid = user.puuid || user.id || "";
+        const blocked = user.status === "blocked";
+        return `
+          <div class="admin-user-item" data-puuid="${puuid}" data-riot-id="${cleanValue(user.riotId || "-")}">
+            <div class="admin-user-main">
+              <strong>${cleanValue(user.riotId || "-")}</strong>
+              <span>最終ログイン：${formatAdminDate(user.lastSeenAt)}</span>
+              <span>Ver. ${cleanValue(user.appVersion || "不明")}</span>
+              <span>所持KP ${Number(user.kp || 0)} / 所持AP ${Number(user.ap || 0)}</span>
+              <span>status：${cleanValue(user.status || "pending")}</span>
+            </div>
+            <div class="admin-user-actions">
+              <button type="button" class="admin-open-send-button">送信</button>
+              <button type="button" class="admin-open-confiscate-button">没収</button>
+              <button type="button" class="admin-toggle-ban-button">${blocked ? "解除" : "BAN"}</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function loadAdminUsers() {
+      if (!adminUsersList || !window.trackerValorantApi.listFirebaseUsers) return;
+      showAdminListView();
+      adminUsersList.innerHTML = `<div class="admin-empty">読み込み中</div>`;
+      try {
+        const result = await window.trackerValorantApi.listFirebaseUsers();
+        renderAdminUsers(result.users || []);
+      } catch (error) {
+        adminUsersList.innerHTML = `<div class="admin-empty">読み込み失敗</div>`;
+      }
+    }
+
+    function getAdminItemPayload() {
+      const checked = new Set(Array.from(document.querySelectorAll(".admin-item-check:checked")).map((input) => input.dataset.field));
+      return {
+        kp: checked.has("kp") ? Number(document.getElementById("adminItemKpInput")?.value) || 0 : 0,
+        ap: checked.has("ap") ? Number(document.getElementById("adminItemApInput")?.value) || 0 : 0,
+        ticket15: checked.has("ticket15") ? Number(document.getElementById("adminItemTicket15Input")?.value) || 0 : 0,
+        ticket2: checked.has("ticket2") ? Number(document.getElementById("adminItemTicket2Input")?.value) || 0 : 0
+      };
+    }
+
+    function setAdminImplementationTestStatus(message) {
+      if (adminImplementationTestStatus) adminImplementationTestStatus.textContent = message || "";
+    }
+
+    function saveImplementationTestState() {
+      const trackerState = window.collectionGame?.getImplementationTestState
+        ? window.collectionGame.getImplementationTestState()
+        : null;
+      if (!trackerState) {
+        setAdminImplementationTestStatus("保存できませんでした");
+        return;
+      }
+      localStorage.setItem("admin_implementation_test_state_v1", JSON.stringify({
+        savedAt: new Date().toISOString(),
+        trackerState,
+        adminUsers: currentAdminUsersSnapshot
+      }));
+      setAdminImplementationTestStatus("現在状態を保存しました");
+    }
+
+    function restoreImplementationTestState() {
+      const raw = localStorage.getItem("admin_implementation_test_state_v1");
+      if (!raw) {
+        setAdminImplementationTestStatus("保存状態がありません");
+        return;
+      }
+      try {
+        const saved = JSON.parse(raw);
+        if (saved.trackerState && window.collectionGame?.restoreImplementationTestState) {
+          window.collectionGame.restoreImplementationTestState(saved.trackerState);
+        }
+        renderAdminUsers(Array.isArray(saved.adminUsers) ? saved.adminUsers : []);
+        showAdminListView();
+        if (adminPinStatus) adminPinStatus.textContent = "保存状態を呼び出しました";
+      } catch (error) {
+        setAdminImplementationTestStatus("呼び出しに失敗しました");
+      }
+    }
+    if (adminPinInput) {
+      adminPinInput.addEventListener("input", () => {
+        adminPinInput.value = adminPinInput.value.replace(/\D/g, "").slice(0, 4);
+      });
+    }
+
+    if (adminPinButton) {
+      adminPinButton.addEventListener("click", async () => {
+        const pin = adminPinInput ? adminPinInput.value : "";
+        const result = window.trackerValorantApi.checkAdminPin
+          ? await window.trackerValorantApi.checkAdminPin(pin)
+          : { ok: false };
+        if (!result.ok) {
+          if (adminPinStatus) adminPinStatus.textContent = "PINが違います";
+          if (adminPanel) adminPanel.classList.remove("is-open");
+          return;
+        }
+        if (adminPinStatus) adminPinStatus.textContent = "";
+        if (adminPanel) adminPanel.classList.add("is-open");
+        await syncFirebaseNow();
+        await loadAdminUsers();
+      });
+    }
+
+    if (adminRefreshButton) {
+      adminRefreshButton.addEventListener("click", async () => {
+        await syncFirebaseNow();
+        await loadAdminUsers();
+      });
+    }
+
+    if (adminBulkSendButton) {
+      adminBulkSendButton.addEventListener("click", () => {
+        showAdminSendView({ bulk: true });
+      });
+    }
+
+    if (adminImplementationTestButton) {
+      adminImplementationTestButton.addEventListener("click", () => {
+        showAdminImplementationTestView();
+      });
+    }
+
+    if (adminImplementationTestBackButton) adminImplementationTestBackButton.addEventListener("click", showAdminListView);
+    if (adminTestSaveButton) adminTestSaveButton.addEventListener("click", saveImplementationTestState);
+    if (adminTestRestoreButton) adminTestRestoreButton.addEventListener("click", restoreImplementationTestState);
+    if (adminTestResetLevelButton) {
+      adminTestResetLevelButton.addEventListener("click", () => {
+        if (window.collectionGame?.resetTrackerLevelOnly) window.collectionGame.resetTrackerLevelOnly();
+        setAdminImplementationTestStatus("トラッカーレベルを初期化しました");
+      });
+    }
+    if (adminTestResetItemsButton) {
+      adminTestResetItemsButton.addEventListener("click", () => {
+        if (window.collectionGame?.resetItemsOnly) window.collectionGame.resetItemsOnly();
+        setAdminImplementationTestStatus("アイテムを初期化しました");
+      });
+    }
+    if (adminTestResetCollectionButton) {
+      adminTestResetCollectionButton.addEventListener("click", () => {
+        if (window.collectionGame?.resetCollectionOnly) window.collectionGame.resetCollectionOnly();
+        setAdminImplementationTestStatus("コレクションを初期化しました");
+      });
+    }
+
+    if (adminBackButton) adminBackButton.addEventListener("click", loadAdminUsers);
+
+    if (adminUsersList) {
+      adminUsersList.addEventListener("click", async (event) => {
+        const item = event.target.closest(".admin-user-item");
+        if (!item) return;
+        const puuid = item.dataset.puuid || "";
+        if (!puuid) return;
+
+        if (event.target.closest(".admin-open-send-button")) {
+          showAdminSendView({ puuid, riotId: item.dataset.riotId || "-" }, "send");
+          return;
+        }
+
+        if (event.target.closest(".admin-open-confiscate-button")) {
+          showAdminSendView({ puuid, riotId: item.dataset.riotId || "-" }, "confiscate");
+          return;
+        }
+
+        if (event.target.closest(".admin-toggle-ban-button")) {
+          const isBlocked = item.querySelector(".admin-toggle-ban-button")?.textContent === "解除";
+          if (isBlocked) {
+            await window.trackerValorantApi.allowFirebaseUser(puuid);
+          } else {
+            await window.trackerValorantApi.banFirebaseUser(puuid);
+          }
+          await loadAdminUsers();
+        }
+      });
+    }
+
+    if (adminSendMessageButton) {
+      adminSendMessageButton.addEventListener("click", async () => {
+        if (!currentAdminSendTarget) return;
+        const title = adminMessageTitleInput?.value || "";
+        const message = adminMessageBodyInput?.value || "";
+        if (!message.trim()) return;
+        if (currentAdminSendTarget.bulk) {
+          await window.trackerValorantApi.sendFirebaseBulkMessage(title, message);
+        } else {
+          await window.trackerValorantApi.sendFirebaseMessage(currentAdminSendTarget.puuid, { title, message });
+        }
+        if (adminMessageTitleInput) adminMessageTitleInput.value = "";
+        if (adminMessageBodyInput) adminMessageBodyInput.value = "";
+        await loadAdminUsers();
+      });
+    }
+
+    if (adminSendItemButton) {
+      adminSendItemButton.addEventListener("click", async () => {
+        if (!currentAdminSendTarget) return;
+        const rewards = getAdminItemPayload();
+        if (!rewards.kp && !rewards.ap && !rewards.ticket15 && !rewards.ticket2) return;
+        if (currentAdminActionMode === "confiscate") {
+          if (!currentAdminSendTarget.bulk && window.trackerValorantApi.confiscateFirebaseUserItems) {
+            await window.trackerValorantApi.confiscateFirebaseUserItems(currentAdminSendTarget.puuid, rewards);
+          }
+        } else if (currentAdminSendTarget.bulk) {
+          await window.trackerValorantApi.sendFirebaseBulkItem(rewards);
+        } else {
+          await window.trackerValorantApi.sendFirebaseItem(currentAdminSendTarget.puuid, rewards);
+        }
+        document.querySelectorAll(".admin-item-check").forEach((input) => { input.checked = false; });
+        ["adminItemKpInput", "adminItemApInput", "adminItemTicket15Input", "adminItemTicket2Input"].forEach((id) => {
+          const input = document.getElementById(id);
+          if (input) input.value = "0";
+        });
+        await loadAdminUsers();
+      });
+    }
+
+    syncFirebaseNow();
+
+    playersButton.addEventListener("click", async () => {
+      if (isLoadingPlayers) return;
+      isLoadingPlayers = true;
+      playersButton.disabled = true;
+      if (playersButtonUnlockTimer) clearTimeout(playersButtonUnlockTimer);
+      playersButtonUnlockTimer = setTimeout(() => {
+        isLoadingPlayers = false;
+        playersButton.disabled = false;
+        playersButtonUnlockTimer = null;
+      }, 20000);
+      playersStatus.textContent = "確認中...";
+      clearPlayers();
+      try {
+        const result = await window.trackerValorantApi.getCurrentPlayers();
+        if (!result.ok) {
+          playersStatus.textContent = "取得できませんでした：" + (result.message || "");
+          return;
+        }
+        applyPlayersPayload(result.data, result.message);
+      } catch (error) {
+        playersStatus.textContent = "取得できませんでした：" + error.message;
+      } finally {
+        isLoadingPlayers = false;
+        playersButton.disabled = false;
+        if (playersButtonUnlockTimer) {
+          clearTimeout(playersButtonUnlockTimer);
+          playersButtonUnlockTimer = null;
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

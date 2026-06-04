@@ -1,0 +1,57 @@
+{
+  "name": "valorant-tracker",
+  "version": "1.2.2",
+  "description": "石橋ぶりぶりトラッカー",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.ishibashi.valoranttracker",
+    "productName": "石橋ぶりぶりトラッカー",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "kou6630",
+        "repo": "ishibashi-tracker"
+      }
+    ],
+    "files": [
+      "main.js",
+      "index.html",
+      "preload.js",
+      "tracker-core.js",
+      "tracker-api.js",
+      "firebase.js",
+      "effect.js",
+      "collection-comments.js",
+      "tracker-stats.js",
+      "tracker-data.js",
+      "collection-game.js",
+      "tracker-style.css",
+      "img/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "artifactName": "石橋ぶりぶりトラッカー-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "石橋ぶりぶりトラッカー"
+    }
+  },
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "electron": "^39.2.7",
+    "electron-builder": "^26.0.12"
+  }
+}
