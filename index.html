@@ -1,9 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <title>石橋ぶりぶりトラッカー</title>
   <link rel="stylesheet" href="tracker-style.css">
+  <link rel="stylesheet" href="onboarding-style.css">
   <style>
     * {
       box-sizing: border-box;
@@ -147,6 +148,161 @@
       filter: grayscale(0.4);
     }
 
+    .item-count-icon {
+      width: 18px;
+      height: 18px;
+      object-fit: contain;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+
+    .menu-source-button {
+      display: none !important;
+    }
+
+    .main-menu-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1900;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.18);
+    }
+
+    .main-menu-overlay.is-open {
+      display: flex;
+    }
+
+    .main-menu-panel {
+      position: relative;
+      top: auto;
+      left: auto;
+      right: auto;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(130px, 1fr));
+      gap: 8px;
+      width: min(520px, 92vw);
+      max-height: min(520px, 86vh);
+      overflow: auto;
+      padding: 12px;
+      background: #11151d;
+      border: 1px solid #ff4655;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    .main-menu-panel button {
+      min-height: 38px;
+    }
+
+    #loginBonusButton {
+      position: relative;
+    }
+
+    #loginBonusButton.has-login-bonus::after {
+      content: "!";
+      position: absolute;
+      top: -7px;
+      right: -7px;
+      width: 20px;
+      height: 20px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: #ff4655;
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 900;
+      border: 1px solid #ffffff;
+      box-shadow: 0 0 12px rgba(255, 70, 85, 0.55);
+    }
+
+    .login-bonus-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 2300;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.58);
+    }
+
+    .login-bonus-overlay.is-open {
+      display: flex;
+    }
+
+    .login-bonus-panel {
+      width: min(420px, 92vw);
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+      background: #11151d;
+      color: #ece8e1;
+      border: 1px solid #ff4655;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+      text-align: center;
+    }
+
+    .login-bonus-title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .login-bonus-reward {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 92px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .login-bonus-reward img,
+    .login-bonus-result-item img {
+      width: 58px;
+      height: 58px;
+      object-fit: contain;
+    }
+
+    .login-bonus-reward strong {
+      font-size: 24px;
+    }
+
+    .login-bonus-actions {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .login-bonus-actions button {
+      min-width: 120px;
+    }
+
+    .login-bonus-result-card {
+      width: min(360px, 88vw);
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+      background: #11151d;
+      border: 1px solid #ff4655;
+      color: #ece8e1;
+      text-align: center;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+    }
+
+    .login-bonus-result-item {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 24px;
+      font-weight: 900;
+    }
+
     .status {
       margin: clamp(2px, 0.4vh, 4px) 0;
       font-size: clamp(8px, 1.1vh, 10px);
@@ -173,6 +329,26 @@
 
     .controls-secondary {
       margin-bottom: 0;
+    }
+
+    #teamsArea[hidden],
+    #deathmatchArea[hidden],
+    #entryStopInfo[hidden] {
+      display: none;
+    }
+
+    .deathmatch-box {
+      min-width: 0;
+      min-height: 0;
+      height: fit-content;
+      border: 1px solid var(--line);
+      border-top: 3px solid #f7c948;
+      background: var(--panel);
+      overflow: hidden;
+    }
+
+    .deathmatch-box .team-title {
+      color: #f7d878;
     }
 
     .team-box {
@@ -479,6 +655,38 @@
       color: #7f8ba6;
     }
 
+    .table-info-panels.is-hidden {
+      display: none;
+    }
+
+    .danger-enemy-panel {
+      display: none;
+      grid-column: 3;
+      max-height: none;
+      overflow: visible;
+    }
+
+    .danger-enemy-panel.is-open {
+      display: block;
+    }
+
+    .danger-enemy-list {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 76px;
+    }
+
+    .danger-enemy-list img {
+      width: clamp(44px, 5vw, 72px);
+      height: clamp(44px, 5vw, 72px);
+      object-fit: contain;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 70, 85, 0.55);
+    }
+
     .collection-kp-badge {
       display: inline-flex;
       align-items: center;
@@ -544,6 +752,10 @@
         gap: 6px;
       }
 
+      .danger-enemy-panel {
+        grid-column: auto;
+      }
+
 
       .bias-guide {
         position: static;
@@ -568,22 +780,38 @@
     <div class="top-left-area">
       <h1>
         石橋ぶりぶりトラッカー
+        <span id="appVersionBadge" class="app-version-badge">v1.4.12</span>
         <span id="collectionKpText" class="collection-kp-badge">KP: 0</span>
         <span id="collectionApText" class="collection-kp-badge">AP: 0</span>
+        <span id="collectionCookieText" class="collection-kp-badge">クッキー: 0</span>
         <span id="ticket15CountText" class="collection-kp-badge ticket-count-badge">1.5倍チケット ×0</span>
         <span id="ticket2CountText" class="collection-kp-badge ticket-count-badge">2倍チケット ×0</span>
       </h1>
       <div class="controls">
         <button id="playersButton">更新</button>
-        <button id="autoButton">自動開始</button>
-        <button id="stopButton">停止</button>
-        <label class="ticket-use-option" style="display:none;"><input id="useTicket15" type="checkbox">1.5倍チケットを使う</label>
-        <label class="ticket-use-option" style="display:none;"><input id="useTicket2" type="checkbox">2倍チケットを使う</label>
         <button id="competitiveKpButton">ポイントを獲得</button>
-        <button id="collectionDisplayButton">コレクション</button>
+        <button id="firebaseInboxButton" type="button" class="inbox-button" aria-label="受信箱">✉<span id="firebaseInboxBadge" class="inbox-badge"></span></button>
+        <button id="mainMenuButton" type="button">メニュー</button>
         <button id="settingsButton" type="button" aria-label="設定">⚙</button>
-        <button id="skillUpButton" type="button">スキルUP</button>
-        <button id="collectionHatcheryButton">孵化場</button>
+        <button id="achievementButton" class="menu-source-button" type="button">実績</button>
+        <button id="collectionDisplayButton" class="menu-source-button" type="button">コレクション</button>
+        <button id="collectionHatcheryButton" class="menu-source-button" type="button">孵化場</button>
+        <button id="skillUpButton" class="menu-source-button" type="button">スキルUP</button>
+        <button id="kayoFarmButton" class="menu-source-button" type="button">K/AYO畑</button>
+        <button id="brimGachaButton" class="menu-source-button" type="button">ブリムガチャ</button>
+      </div>
+
+      <div id="mainMenuOverlay" class="main-menu-overlay">
+        <div id="mainMenuPanel" class="main-menu-panel">
+          <button type="button" data-menu-target="achievementButton">実績</button>
+          <button type="button" data-menu-target="collectionDisplayButton">コレクション</button>
+          <button type="button" data-menu-target="collectionHatcheryButton">孵化場</button>
+          <button type="button" data-menu-target="skillUpButton">スキルUP</button>
+          <button type="button" data-menu-target="kayoFarmButton">K/AYO畑</button>
+          <button type="button" data-menu-target="brimGachaButton">ブリムガチャ</button>
+          <button id="weeklyRankingButton" type="button">ランキング</button>
+          <button id="shopButton" type="button">ショップ</button>
+        </div>
       </div>
 
       <div class="controls controls-secondary">
@@ -604,7 +832,7 @@
         <span id="rateStatus">取得率: -</span>
       </div>
 
-      <div class="bias-guide">
+      <div id="biasGuide" class="bias-guide">
         <p class="bias-guide-title">偏見ランク強さ順</p>
         <ol class="bias-guide-list">
           <li>ナメクジ</li>
@@ -626,13 +854,17 @@
   <div id="competitiveKpOverlay" class="competitive-kp-overlay">
     <div id="competitiveKpPanel" class="competitive-kp-panel">
       <div id="competitiveKpSkillSummary" class="competitive-kp-skill-summary"></div>
+      <div class="competitive-kp-ticket-options">
+        <label class="ticket-use-option" style="display:none;"><input id="useTicket15" type="checkbox">1.5倍チケットを使う</label>
+        <label class="ticket-use-option" style="display:none;"><input id="useTicket2" type="checkbox">2倍チケットを使う</label>
+      </div>
       <div id="competitiveKpList" class="competitive-kp-list"></div>
     </div>
   </div>
 
 
   <section class="tables-area">
-  <div class="teams">
+  <div id="teamsArea" class="teams">
     <div class="team-box">
       <h2 class="team-title">味方</h2>
       <table>
@@ -695,7 +927,31 @@
       </table>
     </div>
   </div>
-    <div class="bottom-panels table-info-panels">
+  <div id="deathmatchArea" class="deathmatch-area" hidden>
+    <div class="deathmatch-box">
+      <h2 class="team-title">デスマッチ参加者</h2>
+      <table>
+        <colgroup>
+          <col style="width: 28%;">
+          <col style="width: 22%;">
+          <col style="width: 16%;">
+          <col style="width: 12%;">
+          <col style="width: 22%;">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>名前</th>
+            <th>キャラ</th>
+            <th>ランク</th>
+            <th>HS率</th>
+            <th>最高</th>
+          </tr>
+        </thead>
+        <tbody id="deathmatchPlayers"></tbody>
+      </table>
+    </div>
+  </div>
+    <div id="entryStopInfo" class="bottom-panels table-info-panels">
       <div class="info-panel">
         <p class="info-panel-title">味方のエントリー阻止スキル</p>
         <div id="blueTeamFeatures" class="info-empty">未確認</div>
@@ -707,6 +963,10 @@
       <div class="info-panel">
         <p class="info-panel-title">敵のエントリー阻止スキル</p>
         <div id="redTeamFeatures" class="info-empty">未確認</div>
+      </div>
+      <div id="dangerEnemyPanel" class="info-panel danger-enemy-panel">
+        <p class="info-panel-title">危険人物</p>
+        <div id="dangerEnemyList" class="danger-enemy-list"></div>
       </div>
     </div>
   </section>
@@ -730,6 +990,14 @@
     </div>
   </div>
 
+  <div id="achievementOverlay" class="collection-display-overlay">
+    <div id="achievementPanel" class="collection-panel achievement-panel">
+      <p class="collection-panel-title">実績</p>
+      <div id="achievementGrid" class="achievement-grid"></div>
+      <div id="achievementDetail" class="achievement-detail"></div>
+    </div>
+  </div>
+
   <div id="collectionHatcheryOverlay" class="collection-display-overlay">
     <div id="collectionHatcheryPanel" class="collection-panel">
       <p class="collection-panel-title">孵化場</p>
@@ -738,6 +1006,7 @@
       <div class="collection-panel-actions">
         <button id="collectionSummonEggButton">卵召喚 -10KP</button>
         <button id="collectionHatchEggButton">孵化する -15KP</button>
+        <button id="collectionDiscardEggButton" type="button" hidden>卵を破棄する</button>
       </div>
     </div>
   </div>
@@ -746,72 +1015,64 @@
   <div id="settingsOverlay" class="settings-overlay">
     <div id="settingsPanel" class="settings-panel">
       <div class="settings-panel-header">設定</div>
+      <div class="settings-section-title">画面設定</div>
       <label class="settings-slider-row">
         <span>画面の透明度 <b id="opacityValueText">0%</b></span>
         <input id="opacitySlider" type="range" min="0" max="100" step="1" value="0">
       </label>
-      <div class="admin-pin-row">
-        <input id="adminPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="管理者PIN">
-        <button id="adminPinButton" type="button">管理者</button>
+      <div class="settings-section-title">Riot Clientフォルダ</div>
+      <div class="settings-folder-row">
+        <span>Riot Clientフォルダ</span>
+        <div class="settings-folder-actions">
+          <button id="riotClientFolderButton" type="button">参照</button>
+          <button id="riotClientFolderClearButton" type="button">標準に戻す</button>
+        </div>
+        <div id="riotClientFolderText" class="settings-folder-path">標準の場所を使用</div>
       </div>
-      <div id="adminPinStatus" class="admin-pin-status"></div>
-      <div id="adminPanel" class="admin-panel">
-        <div id="adminListPanel" class="admin-list-panel">
-          <div class="admin-panel-header">
-            <span>管理者パネル</span>
-            <div class="admin-panel-actions">
-              <button id="adminRefreshButton" type="button">更新</button>
-              <button id="adminBulkSendButton" type="button">一括送信</button>
-              <button id="adminImplementationTestButton" type="button">実装テスト</button>
-            </div>
-          </div>
-          <div id="adminUsersList" class="admin-users-list"></div>
+      <div class="settings-section-title">アカウント連携</div>
+      <div class="settings-folder-row account-link-section">
+        <span>アカウント連携</span>
+        <div id="googleAccountPanel" class="google-account-panel">
+          <div class="google-account-message">Googleログインは必須です。進捗、PUUID連携、ショップ、ログインボーナスの同期に使用します。</div>
+          <button id="googleLoginButton" type="button">Googleでログイン</button>
+          <button id="googleLinkPuuidButton" type="button" style="display:none;">現在のVALORANTアカウントを連携</button>
+          <button id="googleLogoutButton" type="button" style="display:none;">ログアウト</button>
+          <div id="googleAccountStatus" class="settings-folder-path"></div>
+          <div id="googlePuuidList" class="settings-folder-path"></div>
         </div>
-        <div id="adminImplementationTestPanel" class="admin-implementation-test-panel">
-          <div class="admin-panel-header">
-            <span>実装テスト</span>
-            <button id="adminImplementationTestBackButton" type="button">アカウント一覧に戻る</button>
-          </div>
-          <div class="admin-send-section">
-            <strong>保存・復元</strong>
-            <button id="adminTestSaveButton" type="button">現在状態を保存</button>
-            <button id="adminTestRestoreButton" type="button">保存状態を呼び出し</button>
-          </div>
-          <div class="admin-send-section">
-            <strong>初期化</strong>
-            <button id="adminTestResetLevelButton" type="button">トラッカーレベル初期化</button>
-            <button id="adminTestResetItemsButton" type="button">アイテム初期化</button>
-            <button id="adminTestResetCollectionButton" type="button">コレクション初期化</button>
-          </div>
-          <div id="adminImplementationTestStatus" class="admin-pin-status"></div>
-        </div>
-        <div id="adminSendPanel" class="admin-send-panel">
-          <div class="admin-panel-header">
-            <span id="adminSendTargetLabel">送信画面</span>
-            <button id="adminBackButton" type="button">アカウント一覧に戻る</button>
-          </div>
-          <div class="admin-send-section">
-            <strong>メッセージ送信</strong>
-            <input id="adminMessageTitleInput" type="text" placeholder="タイトル">
-            <textarea id="adminMessageBodyInput" rows="3" placeholder="メッセージ"></textarea>
-            <button id="adminSendMessageButton" type="button">送信</button>
-          </div>
-          <div class="admin-send-section">
-            <strong>アイテム送信</strong>
-            <label><input class="admin-item-check" data-field="kp" type="checkbox"> KP <input id="adminItemKpInput" type="number" min="0" value="0"></label>
-            <label><input class="admin-item-check" data-field="ap" type="checkbox"> AP <input id="adminItemApInput" type="number" min="0" value="0"></label>
-            <label><input class="admin-item-check" data-field="ticket15" type="checkbox"> 1.5倍チケット <input id="adminItemTicket15Input" type="number" min="0" value="0"></label>
-            <label><input class="admin-item-check" data-field="ticket2" type="checkbox"> 2倍チケット <input id="adminItemTicket2Input" type="number" min="0" value="0"></label>
-            <button id="adminSendItemButton" type="button">送信</button>
-          </div>
-        </div>
+      </div>
+      <div class="settings-section-title">ツール用ニックネーム</div>
+      <div class="settings-folder-row">
+        <span>ニックネーム変更</span>
+        <div class="settings-folder-actions"><button id="nicknameChangeButton" type="button">20KPで変更</button></div>
+        <div class="settings-folder-path">Googleアカウントごとに一意のニックネームを設定します</div>
+      </div>
+      <div class="settings-section-title">利用ポリシー・チュートリアル</div>
+      <div class="settings-folder-row">
+        <span>説明を見直す</span>
+        <div class="settings-folder-actions"><button id="policyReferenceButton" type="button">利用ポリシー</button><button id="tutorialReferenceButton" type="button">チュートリアル</button></div>
+        <div class="settings-folder-path">禁止事項、保存データ、戦績項目、トラッカーレベルを確認できます。</div>
+      </div>
+      <div class="settings-folder-row">
+        <span>初回セットアップ</span>
+        <div class="settings-folder-actions"><button id="replayOnboardingButton" type="button">セットアップをもう一度見る</button><button id="legacyProgressRecoveryButton" type="button">旧ローカル進捗を確認</button></div>
+        <div class="settings-folder-path">完了済みのセットアップと画面案内を、その場でもう一度確認できます。</div>
       </div>
     </div>
   </div>
 
+  <script src="asset-url.js"></script>
   <script src="effect.js"></script>
   <script src="collection-comments.js"></script>
+  <script src="collection-operations.js"></script>
   <script src="collection-game.js"></script>
+  <script src="kayo-farm-data.js"></script>
+  <script src="kayo-farm.js"></script>
+  <script src="brim-gacha.js"></script>
+  <script src="google-account.js"></script>
+  <script src="shop.js"></script>
+  <script src="login-bonus.js"></script>
+  <script src="inbox-utils.js"></script>
   <script>
     function toggleSettingsPanel(event) {
       if (event) event.preventDefault();
@@ -822,14 +1083,18 @@
       const isOpen = panel.classList.toggle("is-open");
       if (overlay) overlay.classList.toggle("is-open", isOpen);
       panel.style.display = isOpen ? "flex" : "none";
+      if (isOpen) window.dispatchEvent(new CustomEvent("collection:achievement-action", { detail: { action: "open-settings" } }));
     }
 
     const playersButton = document.getElementById("playersButton");
-    const autoButton = document.getElementById("autoButton");
-    const stopButton = document.getElementById("stopButton");
+    const mainMenuButton = document.getElementById("mainMenuButton");
+    const mainMenuOverlay = document.getElementById("mainMenuOverlay");
+    const mainMenuPanel = document.getElementById("mainMenuPanel");
     const settingsButton = document.getElementById("settingsButton");
     const settingsOverlay = document.getElementById("settingsOverlay");
     const competitiveKpButton = document.getElementById("competitiveKpButton");
+    const firebaseInboxButton = document.getElementById("firebaseInboxButton");
+    const firebaseInboxBadge = document.getElementById("firebaseInboxBadge");
     const competitiveKpOverlay = document.getElementById("competitiveKpOverlay");
     const competitiveKpPanel = document.getElementById("competitiveKpPanel");
     const competitiveKpSkillSummary = document.getElementById("competitiveKpSkillSummary");
@@ -837,41 +1102,28 @@
     const settingsPanel = document.getElementById("settingsPanel");
     const opacitySlider = document.getElementById("opacitySlider");
     const opacityValueText = document.getElementById("opacityValueText");
-    const adminPinInput = document.getElementById("adminPinInput");
-    const adminPinButton = document.getElementById("adminPinButton");
-    const adminPinStatus = document.getElementById("adminPinStatus");
-    const adminPanel = document.getElementById("adminPanel");
-    const adminRefreshButton = document.getElementById("adminRefreshButton");
-    const adminBulkSendButton = document.getElementById("adminBulkSendButton");
-    const adminImplementationTestButton = document.getElementById("adminImplementationTestButton");
-    const adminUsersList = document.getElementById("adminUsersList");
-    const adminListPanel = document.getElementById("adminListPanel");
-    const adminImplementationTestPanel = document.getElementById("adminImplementationTestPanel");
-    const adminImplementationTestBackButton = document.getElementById("adminImplementationTestBackButton");
-    const adminImplementationTestStatus = document.getElementById("adminImplementationTestStatus");
-    const adminTestSaveButton = document.getElementById("adminTestSaveButton");
-    const adminTestRestoreButton = document.getElementById("adminTestRestoreButton");
-    const adminTestResetLevelButton = document.getElementById("adminTestResetLevelButton");
-    const adminTestResetItemsButton = document.getElementById("adminTestResetItemsButton");
-    const adminTestResetCollectionButton = document.getElementById("adminTestResetCollectionButton");
-    const adminSendPanel = document.getElementById("adminSendPanel");
-    const adminSendTargetLabel = document.getElementById("adminSendTargetLabel");
-    const adminBackButton = document.getElementById("adminBackButton");
-    const adminMessageTitleInput = document.getElementById("adminMessageTitleInput");
-    const adminMessageBodyInput = document.getElementById("adminMessageBodyInput");
-    const adminSendMessageButton = document.getElementById("adminSendMessageButton");
-    const adminSendItemButton = document.getElementById("adminSendItemButton");
-
+    const riotClientFolderButton = document.getElementById("riotClientFolderButton");
+    const riotClientFolderClearButton = document.getElementById("riotClientFolderClearButton");
+    const riotClientFolderText = document.getElementById("riotClientFolderText");
     const playersStatus = document.getElementById("playersStatus");
 
     const bluePlayers = document.getElementById("bluePlayers");
     const redPlayers = document.getElementById("redPlayers");
+    const teamsArea = document.getElementById("teamsArea");
+    const deathmatchArea = document.getElementById("deathmatchArea");
+    const deathmatchPlayers = document.getElementById("deathmatchPlayers");
+    const entryStopInfo = document.getElementById("entryStopInfo");
     const mapStatus = document.getElementById("mapStatus");
     const autoStatus = document.getElementById("autoStatus");
     const rateStatus = document.getElementById("rateStatus");
     const blueTeamFeatures = document.getElementById("blueTeamFeatures");
     const redTeamFeatures = document.getElementById("redTeamFeatures");
     const matchWarnings = document.getElementById("matchWarnings");
+    const tableInfoPanels = document.querySelector(".table-info-panels");
+    const dangerEnemyPanel = document.getElementById("dangerEnemyPanel");
+    const dangerEnemyList = document.getElementById("dangerEnemyList");
+
+    const LOGIN_BONUS_REWARDS = window.loginBonus?.REWARDS || [];
 
     let isLoadingPlayers = false;
     let currentMapName = "-";
@@ -879,9 +1131,8 @@
     let kpEarnedToastTimer = null;
     let isDetailFetchingView = false;
     let playersButtonUnlockTimer = null;
-    let currentAdminSendTarget = null;
-    let currentAdminActionMode = "send";
-    let currentAdminUsersSnapshot = [];
+    let firebaseInboxItems = [];
+    let firebaseInboxNextPageToken = "";
 
     const ENTRY_DENIAL_SKILLS = {
       "KAY/O": "フラグメント",
@@ -913,7 +1164,7 @@
       const text = String(value);
       if (text === "Unknown#----" || text === "Unknown") return "非公開";
       if (text.includes("API") && text.includes("error")) return "-";
-      return value;
+      return String(value).replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]);
     }
 
     function getAutoDisplayStatus(status, mode = "") {
@@ -927,7 +1178,7 @@
     }
 
     function setAutoDisplayStatus(status, mode = "") {
-      autoStatus.textContent = "閾ｪ蜍・ " + getAutoDisplayStatus(status, mode);
+      autoStatus.textContent = "自動: " + getAutoDisplayStatus(status, mode);
     }
 
     function getRankHtml(player) {
@@ -1048,10 +1299,35 @@
     }
 
     function setDeathmatchView(isDeathmatch) {
-      document.querySelectorAll("th").forEach((th) => {
-        const text = th.textContent.trim();
-        const hide = ["PT", "キャラ", "HS率", "KD", "勝敗"].includes(text);
-        th.style.display = isDeathmatch && hide ? "none" : "";
+      teamsArea.hidden = isDeathmatch;
+      deathmatchArea.hidden = !isDeathmatch;
+      entryStopInfo.hidden = isDeathmatch;
+    }
+
+    function getDeathmatchPlayerRowHtml(player) {
+      if (!player) return '<td colspan="5">参加者を取得できませんでした</td>';
+      return `
+        <td class="name" title="${cleanValue(player.name)}">${cleanValue(player.name)}</td>
+        <td>${getAgentHtml(player)}</td>
+        <td>${getRankHtml(player)}</td>
+        <td>${cleanValue(player.hsRate)}</td>
+        <td>${getPeakRankHtml(player)}</td>
+      `;
+    }
+
+    function renderDeathmatchPlayers(players) {
+      deathmatchPlayers.innerHTML = "";
+      const visiblePlayers = Array.isArray(players) ? players : [];
+      if (visiblePlayers.length === 0) {
+        const row = document.createElement("tr");
+        row.innerHTML = getDeathmatchPlayerRowHtml(null);
+        deathmatchPlayers.appendChild(row);
+        return;
+      }
+      visiblePlayers.forEach((player) => {
+        const row = document.createElement("tr");
+        row.innerHTML = getDeathmatchPlayerRowHtml(player);
+        deathmatchPlayers.appendChild(row);
       });
     }
 
@@ -1080,13 +1356,16 @@
       competitiveKpSkillSummary.style.display = items.length ? "flex" : "none";
     }
 
-    function renderCompetitiveKpMatches(matches) {
+    function renderCompetitiveKpMatches(matches, notice = "") {
       if (!competitiveKpList) return;
       if (!Array.isArray(matches) || !matches.length) {
         competitiveKpList.innerHTML = `<div class="competitive-kp-message">読み込める試合がありません。</div>`;
         return;
       }
-      competitiveKpList.innerHTML = matches.map((match) => {
+      const noticeHtml = notice
+        ? `<div class="competitive-kp-message competitive-kp-cache-notice">${cleanValue(notice)}</div>`
+        : "";
+      competitiveKpList.innerHTML = noticeHtml + matches.map((match) => {
         const isClaimed = Boolean(match.isClaimed);
         const kills = Number(match.kills || 0);
         const assists = Number(match.assists || 0);
@@ -1113,14 +1392,19 @@
       competitiveKpList.innerHTML = `<div class="competitive-kp-message">試合読み込み中</div>`;
     }
 
-    function renderCompetitiveKpError() {
+    function renderCompetitiveKpError(message = "") {
       if (!competitiveKpList) return;
+      const detail = cleanValue(message || "");
+      const shouldShowValoHint = !detail || !/API|429|403|混み合|制限|タイムアウト/.test(detail);
       competitiveKpList.innerHTML = `
         <div class="competitive-kp-message competitive-kp-error">
           <div>読み込みに失敗しました。</div>
-          <div class="competitive-kp-cause-title">原因かも</div>
-          <div>VALORANTを起動してる？</div>
-          <div>VALORANTを起動して更新を押した後に自動開始を押してもう一度試してください</div>
+          ${detail ? `<div>${detail}</div>` : ""}
+          ${shouldShowValoHint ? `
+            <div class="competitive-kp-cause-title">原因かも</div>
+            <div>VALORANTを起動してる？</div>
+            <div>VALORANTを起動して更新を押して、もう一度試してください</div>
+          ` : ""}
         </div>
       `;
     }
@@ -1139,17 +1423,20 @@
           return;
         }
         if (!window.trackerValorantApi.getCompetitiveKpMatches) {
-          renderCompetitiveKpError();
+          renderCompetitiveKpError("ポイント獲得機能が見つかりません。");
           return;
         }
         const result = await window.trackerValorantApi.getCompetitiveKpMatches();
         if (!result?.ok) {
-          renderCompetitiveKpError();
+          renderCompetitiveKpError(result?.message || "");
           return;
         }
-        renderCompetitiveKpMatches(result.matches || []);
+        const fetchedAt = result?.stale && result?.fetchedAt
+          ? `${result.message || "前回の履歴を表示しています。"}（${new Date(result.fetchedAt).toLocaleString("ja-JP")}取得）`
+          : result?.message || "";
+        renderCompetitiveKpMatches(result.matches || [], fetchedAt);
       } catch (error) {
-        renderCompetitiveKpError();
+        renderCompetitiveKpError(error.message || "");
       }
     }
 
@@ -1167,6 +1454,7 @@
       const originalText = button.textContent;
       button.disabled = true;
       button.textContent = "獲得中...";
+      let remoteLocked = false;
 
       try {
         const syncResult = await syncFirebaseNow();
@@ -1181,21 +1469,42 @@
           button.textContent = originalText;
           return;
         }
+        remoteLocked = window.collectionGame?.beginRemoteProgressOperation?.() === true;
+        if (!remoteLocked) {
+          button.disabled = false;
+          button.textContent = "他の進捗処理中です。";
+          return;
+        }
+        const account = await window.trackerValorantApi?.getCurrentAccountInfo?.();
+        const flushed = await window.onboardingAccount?.flushPendingProgress?.();
+        if (flushed && !flushed.ok) {
+          button.disabled = false;
+          button.textContent = flushed.message || "進捗の保存を完了できませんでした。";
+          return;
+        }
+        const committed = await window.trackerValorantApi?.claimGoogleMatchReward?.({
+          matchId: result.claimedMatchId || matchId,
+          puuid: account?.puuid || "",
+          kpEarned: Number(result.kpEarned) || 0,
+          apEarned: Number(result.apEarned) || 0
+        });
+        if (!committed?.ok) {
+          button.disabled = false;
+          button.textContent = committed?.message || "獲得失敗";
+          return;
+        }
+        await window.trackerValorantApi?.markCompetitiveKpClaimed?.(result.claimedMatchId || matchId);
+        window.collectionGame?.applyCommittedCloudState?.(committed.state || {}, committed.revision || "");
+        if (!committed.alreadyClaimed) window.collectionGame?.showCommittedMatchReward?.(committed.reward || {});
         button.textContent = "獲得済み";
         button.classList.add("is-claimed");
         button.disabled = true;
-        if (window.collectionGame?.claimMatchReward) {
-          const reward = window.collectionGame.claimMatchReward({
-            kpEarned: Number(result.kpEarned) || 0,
-            apEarned: Number(result.apEarned) || 0,
-            matchId: result.claimedMatchId || matchId
-          });
-          showKpEarnedToast(`${reward.kp}KP / ${reward.ap}AP`);
-        }
-        syncFirebaseQuietly();
+        if (!committed.alreadyClaimed) showKpEarnedToast(`${Number(committed.reward?.kp || 0)}KP / ${Number(committed.reward?.ap || 0)}AP`);
       } catch (error) {
         button.disabled = false;
         button.textContent = "獲得失敗";
+      } finally {
+        if (remoteLocked) window.collectionGame?.endRemoteProgressOperation?.();
       }
     }
 
@@ -1264,19 +1573,110 @@
       return warnings;
     }
 
+    function scoreDangerPeakRank(peakRank) {
+      const rank = cleanValue(peakRank);
+      const match = rank.match(/(アイアン|ブロンズ|シルバー|ゴールド|プラチナ|ダイヤ|アセンダント|イモータル)([123])?/);
+      if (!match) return rank.includes("レディアント") ? 33 : 0;
+      const base = {
+        "アイアン": 0,
+        "ブロンズ": 3,
+        "シルバー": 7,
+        "ゴールド": 11,
+        "プラチナ": 15,
+        "ダイヤ": 19,
+        "アセンダント": 23,
+        "イモータル": 28
+      }[match[1]] || 0;
+      return base + Math.max(1, Number(match[2]) || 1);
+    }
+
+    function scoreDangerHsRate(hsRate) {
+      const value = Number(String(hsRate || "").replace("%", ""));
+      if (!Number.isFinite(value)) return 0;
+      if (value >= 50) return 34;
+      if (value >= 45) return 32;
+      if (value >= 40) return 30;
+      if (value >= 35) return 26;
+      if (value >= 30) return 22;
+      if (value >= 25) return 18;
+      if (value >= 20) return 14;
+      if (value >= 15) return 10;
+      if (value >= 10) return 6;
+      if (value >= 5) return 3;
+      return 0;
+    }
+
+    function scoreDangerKd(kd) {
+      const value = Number(kd);
+      if (!Number.isFinite(value)) return 0;
+      if (value >= 3.5) return 33;
+      if (value >= 2.8) return 32;
+      if (value >= 2.2) return 30;
+      if (value >= 1.9) return 27;
+      if (value >= 1.6) return 24;
+      if (value >= 1.4) return 21;
+      if (value >= 1.2) return 18;
+      if (value >= 1.1) return 15;
+      if (value >= 1.0) return 12;
+      if (value >= 0.9) return 9;
+      if (value >= 0.7) return 6;
+      if (value >= 0.5) return 3;
+      return 0;
+    }
+
+    function getDangerScore(player) {
+      const direct = Number(player.biasScore ?? player.dangerScore ?? player.score);
+      if (Number.isFinite(direct) && direct > 0) return direct;
+      return scoreDangerPeakRank(player.peakRank) + scoreDangerHsRate(player.hsRate) + scoreDangerKd(player.kd);
+    }
+
+    function renderDangerEnemies(redTeamPlayers) {
+      if (!dangerEnemyPanel || !dangerEnemyList) return;
+      const dangerous = redTeamPlayers
+        .map((player) => ({ player, score: getDangerScore(player) }))
+        .filter((entry) => entry.score >= 55 && entry.player.characterImage)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 2);
+
+      if (!dangerous.length) {
+        dangerEnemyPanel.classList.remove("is-open");
+        dangerEnemyList.innerHTML = "";
+        return;
+      }
+
+      dangerEnemyPanel.classList.add("is-open");
+      dangerEnemyList.innerHTML = dangerous
+        .map(({ player }) => `<img src="${player.characterImage}" alt="">`)
+        .join("");
+    }
+
     function updateTeamInfoPanels(players) {
+      const isMatchActive = Array.isArray(players) && players.length > 0;
+      if (tableInfoPanels) tableInfoPanels.classList.toggle("is-hidden", !isMatchActive);
+      if (!isMatchActive) {
+        if (dangerEnemyPanel) dangerEnemyPanel.classList.remove("is-open");
+        if (dangerEnemyList) dangerEnemyList.innerHTML = "";
+        return;
+      }
+
       const blueTeamPlayers = players.filter((player) => player.sideLabel === "味方");
       const redTeamPlayers = players.filter((player) => player.sideLabel !== "味方");
 
       renderInfoList(blueTeamFeatures, getEntryDenialItems(blueTeamPlayers));
       renderInfoList(redTeamFeatures, getEntryDenialItems(redTeamPlayers));
       renderInfoList(matchWarnings, currentGrowthItems.length ? currentGrowthItems : getMatchWarnings(redTeamPlayers));
+      renderDangerEnemies(redTeamPlayers);
     }
 
     function renderPlayers(players, isDeathmatch = false) {
+      setDeathmatchView(isDeathmatch);
+      if (isDeathmatch) {
+        renderDeathmatchPlayers(players);
+        return;
+      }
+
       ensurePlayerRows(bluePlayers);
       ensurePlayerRows(redPlayers);
-      setDeathmatchView(isDeathmatch);
       updateTeamInfoPanels(players);
       const blueTeamPlayers = players.filter((player) => player.sideLabel === "味方");
       const redTeamPlayers = players.filter((player) => player.sideLabel !== "味方");
@@ -1297,6 +1697,78 @@
     renderPlayers([], false);
 
     window.trackerValorantApi = window.valorantApi ? window.valorantApi : Object.create(null);
+    let accountGateState = "checking";
+    let accountGateTimer = null;
+    let autoWatchWasRunningBeforeBlock = false;
+    let autoWatchRunning = false;
+    function renderAccountGate(message = "アカウント状態を確認しています。") {
+      let gate = document.getElementById("accountGate");
+      if (!gate) { gate = document.createElement("div"); gate.id = "accountGate"; gate.className = "firebase-inbox-overlay is-open"; document.body.appendChild(gate); }
+      if (accountGateState === "active") { gate.remove(); return; }
+      const actions = accountGateState === "signedOut"
+        ? '<button id="accountGateLogin" type="button">Googleでログイン</button>'
+        : accountGateState === "blocked" || accountGateState === "error"
+          ? '<button id="accountGateRetry" type="button">状態を再確認</button><button id="accountGateSignOut" type="button">Googleログアウト</button>'
+          : "";
+      const title = accountGateState === "blocked" ? "利用停止中" : accountGateState === "error" ? "確認できません" : accountGateState === "signedOut" ? "Googleログインが必要です" : "確認中";
+      gate.innerHTML = `<div class="firebase-inbox-card"><div class="firebase-inbox-title">${title}</div><div class="firebase-inbox-body">${cleanValue(message)}</div><div class="firebase-inbox-actions">${actions}</div></div>`;
+      document.getElementById("accountGateRetry")?.addEventListener("click", checkAccountGate);
+      document.getElementById("accountGateLogin")?.addEventListener("click", async (event) => { event.currentTarget.disabled = true; const result = await window.trackerValorantApi.startGoogleLogin?.(); if (!result?.ok) { accountGateState = "signedOut"; return renderAccountGate(result?.message || "Googleログインに失敗しました。"); } checkAccountGate(); });
+      document.getElementById("accountGateSignOut")?.addEventListener("click", async () => { await window.trackerValorantApi.signOutGoogle?.(); window.collectionGame?.deactivateGoogleAccount?.(); accountGateState = "signedOut"; renderAccountGate("Googleログインが必要です。設定からログインしてください。"); });
+    }
+    async function checkAccountGate(options = {}) {
+      const foreground = options.foreground !== false;
+      if (foreground) { accountGateState = "checking"; renderAccountGate(); }
+      const session = await window.trackerValorantApi.getGoogleSession?.();
+      if (!session?.user) {
+        autoWatchRunning = false;
+        await window.trackerValorantApi.stopAutoWatch?.();
+        window.collectionGame?.deactivateGoogleAccount?.();
+        if (foreground || accountGateState !== "active") { accountGateState = "signedOut"; renderAccountGate("Googleログインが必要です。設定からログインしてください。"); }
+        return;
+      }
+      const status = await window.trackerValorantApi.checkGoogleAccountStatus?.();
+      if (!status?.ok) { if (foreground || accountGateState !== "active") { accountGateState = "error"; renderAccountGate(status?.message || "状態を確認できません。再試行してください。"); } return; }
+      if (status.accountStatus === "blocked") {
+        if (accountGateState !== "blocked") {
+          autoWatchWasRunningBeforeBlock = autoWatchRunning;
+          autoWatchRunning = false;
+        }
+        accountGateState = "blocked";
+        await window.trackerValorantApi.stopAutoWatch?.();
+        return renderAccountGate("このGoogleアカウントは利用停止中です。");
+      }
+      if (window.collectionGame?.getActiveGoogleUid?.() !== session.user.uid) {
+        try {
+          await window.onboardingAccount?.ensureProgress?.();
+        } catch (error) {
+          accountGateState = "error";
+          return renderAccountGate(error?.message || "アカウントの進捗を切り替えられませんでした。");
+        }
+        if (window.collectionGame?.getActiveGoogleUid?.() !== session.user.uid) {
+          accountGateState = "error";
+          return renderAccountGate("アカウント別進捗を準備できませんでした。再試行してください。");
+        }
+      }
+      const wasBlocked = accountGateState === "blocked";
+      accountGateState = "active"; renderAccountGate();
+      syncFirebaseQuietly();
+      if (wasBlocked && autoWatchWasRunningBeforeBlock) {
+        const resumed = await startMonitoringAutomatically();
+        if (resumed?.ok) autoWatchWasRunningBeforeBlock = false;
+      }
+      else if (!window.__initialMonitoringStarted) { window.__initialMonitoringStarted = true; startMonitoringAutomatically(); }
+    }
+    function startAccountGateLifecycle() {
+      if (accountGateTimer) return;
+      checkAccountGate();
+      accountGateTimer = setInterval(() => { if (accountGateState === "active" || accountGateState === "blocked") checkAccountGate({ foreground: false }); }, 60000);
+    }
+    window.addEventListener("onboarding:opened", (event) => {
+      if (event.detail?.mode === "first") document.getElementById("accountGate")?.remove();
+    });
+    window.addEventListener("onboarding:ready", startAccountGateLifecycle);
+    window.addEventListener("onboarding:completed", startAccountGateLifecycle);
 
     if (window.trackerValorantApi.onPlayersProgress) {
       window.trackerValorantApi.onPlayersProgress((data) => {
@@ -1311,41 +1783,33 @@
         setAutoDisplayStatus(statusText);
         if (data.fetchRate) rateStatus.textContent = "取得頻度: " + detailText;
         if (statusText && statusText !== "-") {
-          playersStatus.textContent = detailText && detailText !== "-" ? statusText + " / " + detailText : statusText;
+          playersStatus.textContent = detailText && detailText !== "-" ? statusText + " / 原因: " + detailText : statusText;
         }
         const kpMatch = String(statusText).match(/[0-9]+KP/);
         if (kpMatch) showKpEarnedToast(Number(kpMatch[0].replace("KP", "")));
       });
     }
 
-    autoButton.addEventListener("click", async () => {
+    async function startMonitoringAutomatically() {
       setAutoDisplayStatus("試合待機中");
       const syncResult = await syncFirebaseNow();
       if (syncResult?.blocked) {
         playersStatus.textContent = syncResult.message || "このアカウントは利用停止中です。";
         setAutoDisplayStatus("停止中");
-        return;
+        return { ok: false, blocked: true };
       }
       if (!window.trackerValorantApi.startAutoWatch) {
         setAutoDisplayStatus("停止中");
-        return;
+        return { ok: false, message: "自動監視機能が見つかりません。" };
       }
       const result = await window.trackerValorantApi.startAutoWatch();
       if (result?.blocked) {
         playersStatus.textContent = result.message || "このアカウントは利用停止中です。";
       }
+      autoWatchRunning = Boolean(result?.ok);
       setAutoDisplayStatus(result.ok ? "試合待機中" : "停止中");
-    });
-
-    stopButton.addEventListener("click", async () => {
-      if (!window.trackerValorantApi.stopAutoWatch) {
-        setAutoDisplayStatus("停止中");
-        return;
-      }
-
-      const result = await window.trackerValorantApi.stopAutoWatch();
-      setAutoDisplayStatus("停止中");
-    });
+      return result || { ok: false };
+    }
 
     if (settingsPanel) {
       settingsPanel.classList.remove("is-open");
@@ -1368,8 +1832,251 @@
       });
     }
 
+    function closeMainMenu() {
+      if (mainMenuOverlay) mainMenuOverlay.classList.remove("is-open");
+    }
+
+    function closeWeeklyRankingPanel() {
+      document.getElementById("weeklyRankingOverlay")?.remove();
+    }
+
+    function renderWeeklyRanking(entries = [], participantCount = 0) {
+      if (!entries.length) return '<div class="firebase-inbox-empty">今週はまだ参加者がいません。</div>';
+      return `<div class="firebase-inbox-list">${entries.map((entry) => `
+        <div class="firebase-inbox-row">
+          <span class="firebase-inbox-row-title">${Number(entry.rank || 0)}位　${cleanValue(entry.nickname || "名無し")}</span>
+          <span class="firebase-inbox-row-meta">${Number(entry.kills || 0)}キル / ${Number(entry.assists || 0)}アシスト</span>
+        </div>
+      `).join("")}</div><div class="firebase-inbox-status">今週の参加人数：${Number(participantCount || 0)}人</div>`;
+    }
+
+    async function openWeeklyRankingPanel() {
+      let overlay = document.getElementById("weeklyRankingOverlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "weeklyRankingOverlay";
+        overlay.className = "firebase-inbox-overlay is-open";
+        document.body.appendChild(overlay);
+      }
+      overlay.innerHTML = `
+        <div class="firebase-inbox-card">
+          <div class="firebase-inbox-header">
+            <div><div class="firebase-inbox-title">週間コンペランキング</div><div class="firebase-inbox-row-meta">日本時間・月曜0:00に切り替わります</div></div>
+            <div class="firebase-inbox-actions"><button id="weeklyRankingRefreshButton" class="firebase-inbox-close" type="button">更新</button><button id="weeklyRankingCloseButton" class="firebase-inbox-close" type="button">閉じる</button></div>
+          </div>
+          <div id="weeklyRankingContent" class="firebase-inbox-empty">ランキングを読み込み中</div>
+        </div>`;
+      overlay.classList.add("is-open");
+      document.getElementById("weeklyRankingCloseButton")?.addEventListener("click", closeWeeklyRankingPanel);
+      overlay.addEventListener("click", (event) => { if (event.target === overlay) closeWeeklyRankingPanel(); }, { once: true });
+      const content = document.getElementById("weeklyRankingContent");
+      const refreshButton = document.getElementById("weeklyRankingRefreshButton");
+      let loading = false;
+      const refresh = async () => {
+        if (loading) return;
+        loading = true;
+        refreshButton.disabled = true;
+        refreshButton.textContent = "更新中…";
+        content.textContent = "ランキングを読み込み中";
+        try {
+          const result = await window.trackerValorantApi?.getWeeklyRanking?.();
+          if (!result?.ok) {
+            content.textContent = result?.message || "ランキングを取得できませんでした。";
+            return;
+          }
+          content.innerHTML = renderWeeklyRanking(result.entries || [], result.participantCount || 0);
+        } catch (error) {
+          content.textContent = "ランキングを取得できませんでした。";
+        } finally {
+          loading = false;
+          refreshButton.disabled = false;
+          refreshButton.textContent = "更新";
+        }
+      };
+      refreshButton?.addEventListener("click", refresh);
+      await refresh();
+    }
+
+    function showSimplePanel(title, body) {
+      let overlay = document.getElementById("simpleFeatureOverlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "simpleFeatureOverlay";
+        overlay.className = "firebase-inbox-overlay";
+        document.body.appendChild(overlay);
+      }
+      overlay.innerHTML = `
+        <div class="firebase-inbox-card">
+          <div class="firebase-inbox-title">${cleanValue(title)}</div>
+          <div class="firebase-inbox-body">${cleanValue(body)}</div>
+          <button id="simpleFeatureCloseButton" type="button">閉じる</button>
+        </div>
+      `;
+      overlay.classList.add("is-open");
+      overlay.onclick = (event) => {
+        if (event.target === overlay) overlay.classList.remove("is-open");
+      };
+      document.getElementById("simpleFeatureCloseButton")?.addEventListener("click", () => overlay.classList.remove("is-open"));
+    }
+
+    function normalizeLoginBonusState(state = {}) {
+      return window.loginBonus?.normalizeState?.(state) || { dayIndex: 0, lastClaimDate: "", canClaim: false, serverDate: "" };
+    }
+
+    function canClaimLoginBonus(state = {}) {
+      return window.loginBonus?.canClaim?.(state) || false;
+    }
+
+    async function getLoginBonusState() {
+      const session = await window.trackerValorantApi?.getGoogleSession?.();
+      if (!session?.user?.uid) {
+        return {
+          needsLogin: true,
+          state: normalizeLoginBonusState({}),
+          message: "\u30ed\u30b0\u30a4\u30f3\u30dc\u30fc\u30ca\u30b9\u3092\u53d7\u3051\u53d6\u308b\u306b\u306f\u3001\u8a2d\u5b9a\u304b\u3089Google\u306b\u30ed\u30b0\u30a4\u30f3\u3057\u3066\u304f\u3060\u3055\u3044"
+        };
+      }
+      const result = await window.trackerValorantApi?.getLoginBonusState?.();
+      if (!result?.ok) {
+        return {
+          needsLogin: true,
+          state: normalizeLoginBonusState({}),
+          message: result?.message || "Google\u30ed\u30b0\u30a4\u30f3\u306e\u6709\u52b9\u671f\u9650\u304c\u5207\u308c\u3066\u3044\u307e\u3059\u3002\u8a2d\u5b9a\u304b\u3089\u518d\u30ed\u30b0\u30a4\u30f3\u3057\u3066\u304f\u3060\u3055\u3044"
+        };
+      }
+      return { needsLogin: false, state: normalizeLoginBonusState(result.state || {}) };
+    }
+
+    function renderLoginBonusReward(reward) {
+      return `
+        <div class="login-bonus-reward">
+          <img src="${reward.image}" alt="">
+          <strong>${reward.label}</strong>
+        </div>
+      `;
+    }
+
+    async function refreshLoginBonusBadge() {
+      const button = document.getElementById("loginBonusButton");
+      if (!button) return;
+      const result = await getLoginBonusState();
+      button.classList.toggle("has-login-bonus", !result.needsLogin && canClaimLoginBonus(result.state));
+    }
+
+    async function openLoginBonusPanel() {
+      const result = await getLoginBonusState();
+      const state = result.state;
+      const reward = LOGIN_BONUS_REWARDS[state.dayIndex] || LOGIN_BONUS_REWARDS[0];
+      const claimable = !result.needsLogin && canClaimLoginBonus(state);
+      let overlay = document.getElementById("loginBonusOverlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "loginBonusOverlay";
+        overlay.className = "login-bonus-overlay";
+        document.body.appendChild(overlay);
+      }
+      overlay.innerHTML = `
+        <div class="login-bonus-panel">
+          <p class="login-bonus-title">\u30ed\u30b0\u30a4\u30f3\u30dc\u30fc\u30ca\u30b9</p>
+          <div>\u73fe\u5728\u306e\u5831\u916c\uff1a${state.dayIndex + 1}\u65e5\u76ee</div>
+          ${renderLoginBonusReward(reward)}
+          <div>${result.needsLogin ? result.message : (claimable ? "\u53d7\u3051\u53d6\u308a\u3067\u304d\u307e\u3059\u3002" : "\u4eca\u65e5\u306f\u53d7\u3051\u53d6\u308a\u6e08\u307f\u3067\u3059\u3002")}</div>
+          <div class="login-bonus-actions">
+            <button id="loginBonusClaimButton" type="button" ${claimable ? "" : "disabled"}>\u53d7\u3051\u53d6\u308b</button>
+            <button id="loginBonusCloseButton" type="button">\u9589\u3058\u308b</button>
+          </div>
+        </div>
+      `;
+      overlay.classList.add("is-open");
+      overlay.onclick = (event) => {
+        if (event.target === overlay) overlay.classList.remove("is-open");
+      };
+      document.getElementById("loginBonusCloseButton")?.addEventListener("click", () => overlay.classList.remove("is-open"));
+      document.getElementById("loginBonusClaimButton")?.addEventListener("click", async () => {
+        if (!claimable) return;
+        const claimButton = document.getElementById("loginBonusClaimButton");
+        if (claimButton?.disabled) return;
+        if (claimButton) { claimButton.disabled = true; claimButton.textContent = "受取中..."; }
+        const claim = await window.trackerValorantApi?.claimLoginBonus?.();
+        if (!claim?.ok) {
+          const messageEl = overlay.querySelector(".login-bonus-panel > div:nth-child(4)");
+          if (messageEl) messageEl.textContent = claim?.message || "\u4eca\u65e5\u306f\u53d7\u3051\u53d6\u308a\u6e08\u307f\u3067\u3059\u3002";
+          if (claimButton) {
+            claimButton.disabled = Boolean(claim?.alreadyClaimed);
+            claimButton.textContent = claim?.alreadyClaimed ? "\u53d7\u53d6\u6e08\u307f" : "\u3082\u3046\u4e00\u5ea6\u8a66\u3059";
+          }
+          refreshLoginBonusBadge();
+          return;
+        }
+        window.collectionGame?.replaceCloudState?.(claim.progress || {});
+        overlay.classList.remove("is-open");
+        showLoginBonusResult(claim.reward || reward);
+        refreshLoginBonusBadge();
+      });
+    }
+
+    function showLoginBonusResult(reward) {
+      let overlay = document.getElementById("loginBonusResultOverlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "loginBonusResultOverlay";
+        overlay.className = "login-bonus-overlay";
+        document.body.appendChild(overlay);
+      }
+      overlay.innerHTML = `
+        <div class="login-bonus-result-card">
+          <p class="login-bonus-title">受け取り完了</p>
+          <div class="login-bonus-result-item">
+            <img src="${reward.image}" alt="">
+            <span>${reward.label}</span>
+          </div>
+          <button id="loginBonusResultCloseButton" type="button">閉じる</button>
+        </div>
+      `;
+      overlay.classList.add("is-open");
+      overlay.onclick = (event) => {
+        if (event.target === overlay) overlay.classList.remove("is-open");
+      };
+      document.getElementById("loginBonusResultCloseButton")?.addEventListener("click", () => overlay.classList.remove("is-open"));
+    }
+
+    if (mainMenuButton && mainMenuOverlay) {
+      mainMenuButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        mainMenuOverlay.classList.toggle("is-open");
+        refreshLoginBonusBadge();
+      });
+      mainMenuOverlay.addEventListener("click", (event) => {
+        if (event.target === mainMenuOverlay) closeMainMenu();
+      });
+      if (mainMenuPanel) {
+        mainMenuPanel.addEventListener("click", (event) => {
+          const menuButton = event.target.closest("button");
+          if (!menuButton) return;
+          const targetId = menuButton.dataset.menuTarget;
+          closeMainMenu();
+          if (targetId) {
+            const sourceButton = document.getElementById(targetId);
+            if (sourceButton && !sourceButton.disabled) sourceButton.click();
+            return;
+          }
+          if (menuButton.id === "weeklyRankingButton") openWeeklyRankingPanel();
+        });
+      }
+    }
+
     if (competitiveKpButton) {
       competitiveKpButton.addEventListener("click", openCompetitiveKpPanel);
+    }
+
+    if (firebaseInboxButton) {
+      firebaseInboxButton.addEventListener("click", async () => {
+        if (firebaseInboxButton.disabled) return;
+        firebaseInboxButton.disabled = true;
+        const syncResult = await syncFirebaseNow();
+        firebaseInboxButton.disabled = false;
+        openFirebaseInboxPanel(syncResult?.ok === false ? "メールの取得に失敗しました。古い情報を表示している可能性があります。" : "");
+      });
     }
 
     if (competitiveKpOverlay) {
@@ -1410,6 +2117,51 @@
       opacitySlider.addEventListener("input", () => applyOpacitySetting(opacitySlider.value));
     }
 
+    function setRiotClientFolderText(path) {
+      if (!riotClientFolderText) return;
+      riotClientFolderText.textContent = path ? path : "標準の場所を使用";
+      riotClientFolderText.title = riotClientFolderText.textContent;
+    }
+
+    function opacityToSliderValue(opacity) {
+      const value = Number(opacity);
+      if (!Number.isFinite(value)) return 0;
+      return Math.round(((1 - value) / 0.7) * 100);
+    }
+
+    async function loadAppSettings() {
+      if (!window.trackerValorantApi.getAppSettings) return;
+      const settings = await window.trackerValorantApi.getAppSettings();
+      const opacityPercent = Math.max(0, Math.min(100, opacityToSliderValue(settings?.opacity)));
+      if (opacitySlider) opacitySlider.value = String(opacityPercent);
+      if (opacityValueText) opacityValueText.textContent = `${opacityPercent}%`;
+      setRiotClientFolderText(settings?.riotClientPath || "");
+    }
+
+    if (riotClientFolderButton) {
+      riotClientFolderButton.addEventListener("click", async () => {
+        if (!window.trackerValorantApi.chooseRiotClientFolder) return;
+        const result = await window.trackerValorantApi.chooseRiotClientFolder();
+        if (result?.ok) {
+          setRiotClientFolderText(result.riotClientPath || "");
+          playersStatus.textContent = "Riot Clientフォルダを設定しました。更新を押してください。";
+        }
+      });
+    }
+
+    if (riotClientFolderClearButton) {
+      riotClientFolderClearButton.addEventListener("click", async () => {
+        if (!window.trackerValorantApi.clearRiotClientFolder) return;
+        const result = await window.trackerValorantApi.clearRiotClientFolder();
+        if (result?.ok) {
+          setRiotClientFolderText("");
+          playersStatus.textContent = "Riot Clientフォルダ設定を標準に戻しました。";
+        }
+      });
+    }
+
+    loadAppSettings().catch(() => {});
+
     function getFirebaseInventory() {
       const state = window.collectionGame?.getState ? window.collectionGame.getState() : {};
       const characterCounts = state.characterCounts || {};
@@ -1417,6 +2169,7 @@
       return {
         kp: Number(state.kp || 0),
         ap: Number(state.ap || 0),
+        cookies: Number(state.cookies || 0),
         ticket15: Number(state.tickets?.multiplier15 || 0),
         ticket2: Number(state.tickets?.multiplier2 || 0),
         trackerLevel: Number(state.trackerLevel || 0),
@@ -1424,6 +2177,7 @@
         eggJson: JSON.stringify(state.egg || null),
         ownedCharacterIdsJson: JSON.stringify(ownedCharacterIds),
         characterCountsJson: JSON.stringify(characterCounts),
+        achievementsJson: JSON.stringify(state.achievements || {}),
         ownedCharacterCount: ownedCharacterIds.length,
         series4Unlocked: Boolean(state.series4Unlocked)
       };
@@ -1433,7 +2187,6 @@
       const text = message || "このアカウントは利用停止中です。";
       if (blocked && playersStatus) playersStatus.textContent = text;
       if (playersButton) playersButton.disabled = Boolean(blocked);
-      if (autoButton) autoButton.disabled = Boolean(blocked);
       if (competitiveKpButton) competitiveKpButton.disabled = Boolean(blocked);
     }
 
@@ -1441,24 +2194,175 @@
       const parts = [];
       if (Number(item.kp) > 0) parts.push(`KP ${Number(item.kp)}`);
       if (Number(item.ap) > 0) parts.push(`AP ${Number(item.ap)}`);
+      if (Number(item.cookies) > 0) parts.push(`クッキー ${Number(item.cookies)}`);
       if (Number(item.ticket15) > 0) parts.push(`1.5倍チケット ${Number(item.ticket15)}枚`);
       if (Number(item.ticket2) > 0) parts.push(`2倍チケット ${Number(item.ticket2)}枚`);
-      return parts.length ? `${parts.join(" / ")}を受け取りました！` : "アイテムを受け取りました！";
+      return parts.length ? parts.join(" / ") : "添付アイテム";
     }
 
     function describeConfiscationItem(item) {
       const parts = [];
       if (Number(item.kp) > 0) parts.push(`KP ${Number(item.kp)}`);
       if (Number(item.ap) > 0) parts.push(`AP ${Number(item.ap)}`);
+      if (Number(item.cookies) > 0) parts.push(`クッキー ${Number(item.cookies)}`);
       if (Number(item.ticket15) > 0) parts.push(`1.5倍チケット ${Number(item.ticket15)}枚`);
       if (Number(item.ticket2) > 0) parts.push(`2倍チケット ${Number(item.ticket2)}枚`);
       return parts.length ? `${parts.join(" / ")}が没収されました。` : "アイテムが没収されました。";
     }
 
-    function showFirebaseInboxQueue(items) {
-      const queue = Array.isArray(items) ? [...items] : [];
-      if (!queue.length) return;
+    let firebaseMailboxKey = "firebase_mailbox_state_v1_default";
+    let firebaseMailboxState = loadFirebaseMailboxState(firebaseMailboxKey);
+    let selectedFirebaseInboxName = "";
+    const dismissedFirebaseInboxNames = new Set(firebaseMailboxState.deleted || []);
+    const rewardedFirebaseInboxNames = new Set(firebaseMailboxState.claimed || []);
 
+    function loadFirebaseMailboxState(key) {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(key) || "{}");
+        return {
+          read: Array.isArray(parsed.read) ? parsed.read : [],
+          claimed: Array.isArray(parsed.claimed) ? parsed.claimed : [],
+          deleted: Array.isArray(parsed.deleted) ? parsed.deleted : []
+        };
+      } catch (error) {
+        return { read: [], claimed: [], deleted: [] };
+      }
+    }
+
+    function setFirebaseMailboxKey(key) {
+      const nextKey = `firebase_mailbox_state_v1_${key || "default"}`;
+      if (nextKey === firebaseMailboxKey) return;
+      firebaseMailboxKey = nextKey;
+      firebaseMailboxState = loadFirebaseMailboxState(firebaseMailboxKey);
+      dismissedFirebaseInboxNames.clear();
+      rewardedFirebaseInboxNames.clear();
+      (firebaseMailboxState.deleted || []).forEach((name) => dismissedFirebaseInboxNames.add(name));
+      (firebaseMailboxState.claimed || []).forEach((name) => rewardedFirebaseInboxNames.add(name));
+    }
+
+    function saveFirebaseMailboxState() {
+      firebaseMailboxState = {
+        read: [...new Set(firebaseMailboxState.read || [])],
+        claimed: [...new Set([...(firebaseMailboxState.claimed || []), ...rewardedFirebaseInboxNames])],
+        deleted: [...new Set([...(firebaseMailboxState.deleted || []), ...dismissedFirebaseInboxNames])]
+      };
+      localStorage.setItem(firebaseMailboxKey, JSON.stringify(firebaseMailboxState));
+    }
+
+    function markMailboxReadLocal(item) {
+      if (!item?.name) return;
+      firebaseMailboxState.read = [...new Set([...(firebaseMailboxState.read || []), item.name])];
+      item.read = true;
+      saveFirebaseMailboxState();
+      updateFirebaseInboxBadge();
+    }
+
+    function markMailboxClaimedLocal(item) {
+      if (!item?.name) return;
+      rewardedFirebaseInboxNames.add(item.name);
+      item.claimed = true;
+      saveFirebaseMailboxState();
+    }
+
+    function getInboxTitle(item) {
+      if (item?.title) return item.title;
+      if (item?.type === "item") return "アイテム配布";
+      if (item?.type === "confiscate") return "アイテム没収";
+      return "メッセージ";
+    }
+
+    function getInboxSender(item) {
+      return item?.sender || item?.from || "管理者";
+    }
+
+    function getInboxBody(item) {
+      const body = window.inboxUtils?.getBody?.(item);
+      if (body) return body;
+      if (item?.type === "confiscate") return describeConfiscationItem(item);
+      return "";
+    }
+
+    function hasInboxAttachment(item) {
+      return Boolean(window.inboxUtils?.hasAttachment?.(item));
+    }
+
+    function formatInboxDate(value) {
+      if (!value) return "-";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return date.toLocaleString("ja-JP", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+    }
+
+    function isInboxRead(item) {
+      return Boolean(item?.read) || firebaseMailboxState.read?.includes(item?.name);
+    }
+
+    function isInboxClaimed(item) {
+      return Boolean(item?.claimed) || rewardedFirebaseInboxNames.has(item?.name) || firebaseMailboxState.claimed?.includes(item?.name);
+    }
+
+    function updateFirebaseInboxBadge() {
+      const count = firebaseInboxItems.filter((item) => !isInboxRead(item)).length;
+      if (firebaseInboxButton) firebaseInboxButton.classList.toggle("has-unread", count > 0);
+      if (firebaseInboxBadge) firebaseInboxBadge.textContent = count > 0 ? String(count) : "";
+    }
+
+    function showFirebaseInboxQueue(items, nextPageToken = "") {
+      firebaseInboxItems = (Array.isArray(items) ? [...items] : [])
+        .filter((item) => item?.name && !dismissedFirebaseInboxNames.has(item.name) && !firebaseMailboxState.deleted?.includes(item.name))
+        .map((item) => ({
+          ...item,
+          read: Boolean(item.read) || firebaseMailboxState.read?.includes(item.name),
+          claimed: Boolean(item.claimed) || rewardedFirebaseInboxNames.has(item.name) || firebaseMailboxState.claimed?.includes(item.name)
+        }))
+        .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      firebaseInboxNextPageToken = String(nextPageToken || "");
+      updateFirebaseInboxBadge();
+    }
+
+    function removeFirebaseInboxItemLocally(item) {
+      if (item?.name) dismissedFirebaseInboxNames.add(item.name);
+      firebaseInboxItems = firebaseInboxItems.filter((entry) => entry.name !== item.name);
+      if (selectedFirebaseInboxName === item?.name) selectedFirebaseInboxName = "";
+      saveFirebaseMailboxState();
+      updateFirebaseInboxBadge();
+    }
+
+    async function markFirebaseInboxRead(item) {
+      if (!item?.name) return { ok: false, message: "メールIDが見つかりません。" };
+      try {
+        const result = await window.trackerValorantApi.markGoogleInboxRead?.(item.name);
+        if (!result?.ok) return { ok: false, message: result?.message || "既読の保存に失敗しました。" };
+        markMailboxReadLocal(item);
+      } catch (error) { return { ok: false, message: error.message || "既読の保存に失敗しました。" }; }
+      return { ok: true };
+    }
+
+    async function claimFirebaseInboxItem(item) {
+      if (!item?.name) return { ok: false, message: "メールIDが見つかりません。" };
+      if (!hasInboxAttachment(item)) return { ok: false, message: "添付アイテムがありません。" };
+      if (isInboxClaimed(item)) return { ok: false, message: "受け取り済みです。" };
+      let remoteLocked = false;
+
+      try {
+        remoteLocked = window.collectionGame?.beginRemoteProgressOperation?.() === true;
+        if (!remoteLocked) return { ok: false, message: "他の進捗処理中です。完了後にもう一度お試しください。" };
+        const flushed = await window.onboardingAccount?.flushPendingProgress?.();
+        if (flushed && !flushed.ok) return { ok: false, message: flushed.message || "進捗の保存を完了できませんでした。" };
+        const claimResult = await window.trackerValorantApi.claimGoogleInboxItem?.(item.name);
+        if (!claimResult?.ok) return { ok: false, message: claimResult?.message || "受取を確定できませんでした。" };
+        if (window.collectionGame?.applyCommittedCloudState) window.collectionGame.applyCommittedCloudState(claimResult.progress || {}, claimResult.revision || "");
+        markMailboxClaimedLocal(item);
+        markMailboxReadLocal(item);
+      } catch (error) {
+        return { ok: false, message: error.message || "アイテム反映に失敗しました。" };
+      } finally {
+        if (remoteLocked) window.collectionGame?.endRemoteProgressOperation?.();
+      }
+      return { ok: true };
+    }
+
+    function openFirebaseInboxPanel(syncMessage = "") {
       let overlay = document.getElementById("firebaseInboxOverlay");
       if (!overlay) {
         overlay = document.createElement("div");
@@ -1466,63 +2370,146 @@
         overlay.className = "firebase-inbox-overlay";
         document.body.appendChild(overlay);
       }
+      const setInboxError = (message) => {
+        const status = document.getElementById("firebaseInboxStatus");
+        if (status) status.textContent = message || "メール削除に失敗しました。";
+      };
+      const closeOverlay = () => {
+        overlay.classList.remove("is-open");
+        overlay.innerHTML = "";
+        selectedFirebaseInboxName = "";
+        updateFirebaseInboxBadge();
+      };
 
-      const showNext = () => {
-        const item = queue.shift();
-        if (!item) {
-          overlay.classList.remove("is-open");
-          overlay.innerHTML = "";
+      overlay.onclick = (event) => {
+        if (event.target === overlay) {
+          closeOverlay();
           return;
         }
+        const row = event.target.closest(".firebase-inbox-row");
+        if (!row) return;
+        const item = firebaseInboxItems[Number(row.dataset.mailIndex)];
+        if (item) renderDetail(item);
+      };
 
-        const isItem = item.type === "item";
-        const isConfiscate = item.type === "confiscate";
+      const renderList = () => {
+        selectedFirebaseInboxName = "";
+        const rows = firebaseInboxItems.map((item, index) => {
+          const preview = getInboxBody(item).replace(/\s+/g, " ").slice(0, 80);
+          return `
+            <button type="button" class="firebase-inbox-row ${isInboxRead(item) ? "" : "is-unread"}" data-mail-index="${index}">
+              <span class="firebase-inbox-row-title">${cleanValue(getInboxTitle(item))}</span>
+              <span class="firebase-inbox-row-meta">${cleanValue(getInboxSender(item))}</span>
+              <span class="firebase-inbox-row-meta">${cleanValue(formatInboxDate(item.createdAt))}</span>
+              <span class="firebase-inbox-row-preview">${cleanValue(preview)}</span>
+              <span class="firebase-inbox-attach">${hasInboxAttachment(item) ? (isInboxClaimed(item) ? "受取済" : "添付あり") : ""}</span>
+            </button>
+          `;
+        }).join("");
         overlay.innerHTML = `
           <div class="firebase-inbox-card">
-            <div class="firebase-inbox-title">${isItem ? "アイテム受取" : isConfiscate ? "アイテム没収" : cleanValue(item.title || "メッセージ")}</div>
-            <div class="firebase-inbox-body">${isItem ? describeInboxItem(item) : isConfiscate ? describeConfiscationItem(item) : cleanValue(item.message || "")}</div>
-            <button id="firebaseInboxActionButton" type="button">${isItem ? "受け取る" : "閉じる"}</button>
+            <div class="firebase-inbox-header">
+              <div>
+                <div class="firebase-inbox-title">受信箱</div>
+                <div class="firebase-inbox-row-meta">未読 ${firebaseInboxItems.filter((item) => !isInboxRead(item)).length}件 / 全${firebaseInboxItems.length}件</div>
+              </div>
+              <button id="firebaseInboxCloseButton" class="firebase-inbox-close" type="button">閉じる</button>
+            </div>
+            ${firebaseInboxItems.length ? `<div class="firebase-inbox-list">${rows}</div>` : `<div class="firebase-inbox-empty">メールはありません</div>`}
+            ${firebaseInboxNextPageToken ? '<div class="firebase-inbox-actions"><button id="firebaseInboxMoreButton" type="button">さらに読み込む</button></div>' : ''}
+            <div id="firebaseInboxStatus" class="firebase-inbox-status">${cleanValue(syncMessage || "")}</div>
           </div>
         `;
         overlay.classList.add("is-open");
-        const actionButton = document.getElementById("firebaseInboxActionButton");
-        if (actionButton) {
-          actionButton.addEventListener("click", async () => {
-            if (isItem && window.collectionGame?.addRewards) {
-              window.collectionGame.addRewards({
-                kp: item.kp,
-                ap: item.ap,
-                ticket15: item.ticket15,
-                ticket2: item.ticket2
-              }, describeInboxItem(item));
-            }
-            if (isConfiscate && window.collectionGame?.confiscateRewards) {
-              window.collectionGame.confiscateRewards({
-                kp: item.kp,
-                ap: item.ap,
-                ticket15: item.ticket15,
-                ticket2: item.ticket2
-              }, describeConfiscationItem(item));
-            }
-            if (item.name && window.trackerValorantApi.deleteFirebaseInboxItem) {
-              try { await window.trackerValorantApi.deleteFirebaseInboxItem(item.name); } catch (error) {}
-            }
-            syncFirebaseQuietly();
-            showNext();
-          }, { once: true });
-        }
+        document.getElementById("firebaseInboxCloseButton")?.addEventListener("click", closeOverlay);
+        document.getElementById("firebaseInboxMoreButton")?.addEventListener("click", async (event) => {
+          event.currentTarget.disabled = true;
+          const page = await window.trackerValorantApi.getGoogleInboxPage?.(firebaseInboxNextPageToken);
+          if (!page?.ok) return setInboxError(page?.message || "追加のメールを取得できませんでした。");
+          const known = new Set(firebaseInboxItems.map((entry) => entry.name));
+          firebaseInboxItems.push(...(page.inbox || []).filter((entry) => !known.has(entry.name)));
+          firebaseInboxItems.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+          firebaseInboxNextPageToken = String(page.nextPageToken || "");
+          renderList();
+        });
       };
 
-      showNext();
+      const renderDetail = async (item) => {
+        selectedFirebaseInboxName = item.name;
+        const readResult = await markFirebaseInboxRead(item);
+        const attachments = hasInboxAttachment(item)
+          ? `<div class="firebase-inbox-attachments"><div class="firebase-inbox-attachment">${cleanValue(describeInboxItem(item))}</div></div>`
+          : `<div class="firebase-inbox-row-meta">添付アイテムなし</div>`;
+        const claimHtml = hasInboxAttachment(item)
+          ? isInboxClaimed(item)
+            ? `<button type="button" class="firebase-inbox-claim" disabled>受け取り済み</button>`
+            : `<button id="firebaseInboxClaimButton" type="button" class="firebase-inbox-claim">受け取る</button>`
+          : "";
+        overlay.innerHTML = `
+          <div class="firebase-inbox-card">
+            <div class="firebase-inbox-header">
+              <button id="firebaseInboxBackButton" class="firebase-inbox-back" type="button">一覧に戻る</button>
+              <button id="firebaseInboxCloseButton" class="firebase-inbox-close" type="button">閉じる</button>
+            </div>
+            <div class="firebase-inbox-detail">
+              <div class="firebase-inbox-detail-title">${cleanValue(getInboxTitle(item))}</div>
+              <div class="firebase-inbox-detail-meta">送信者：${cleanValue(getInboxSender(item))} / 受信日時：${cleanValue(formatInboxDate(item.createdAt))}</div>
+              <div class="firebase-inbox-detail-body">${cleanValue(getInboxBody(item))}</div>
+              ${attachments}
+            </div>
+            <div class="firebase-inbox-actions">
+              ${claimHtml}
+              <button id="firebaseInboxDeleteButton" type="button" class="firebase-inbox-delete">削除</button>
+            </div>
+            <div id="firebaseInboxStatus" class="firebase-inbox-status">${readResult?.ok ? "" : cleanValue(readResult?.message || "既読状態を保存できませんでした。")}</div>
+          </div>
+        `;
+        overlay.classList.add("is-open");
+        document.getElementById("firebaseInboxCloseButton")?.addEventListener("click", closeOverlay);
+        document.getElementById("firebaseInboxBackButton")?.addEventListener("click", renderList);
+        document.getElementById("firebaseInboxClaimButton")?.addEventListener("click", async (event) => {
+          const button = event.currentTarget;
+          button.disabled = true;
+          const result = await claimFirebaseInboxItem(item);
+          if (!result.ok) {
+            button.disabled = false;
+            setInboxError(result.message);
+            return;
+          }
+          renderDetail(item);
+        });
+        document.getElementById("firebaseInboxDeleteButton")?.addEventListener("click", async () => {
+          const prepared = await window.trackerValorantApi.prepareGoogleInboxDelete?.(item.name);
+          if (!prepared?.ok) return setInboxError(prepared?.message || "メールを確認できませんでした。");
+          if (prepared.deleted) { removeFirebaseInboxItemLocally(item); return renderList(); }
+          const next = prepared.item;
+          if (hasInboxAttachment(next) && !next.claimed && !confirm("添付アイテムをまだ受け取っていません。本当に削除しますか？")) return;
+          const result = await window.trackerValorantApi.deleteGoogleInboxItem?.(item.name, next.updateTime);
+          if (!result?.ok) {
+            if (result?.conflict && result.item) {
+              const index = firebaseInboxItems.findIndex((entry) => entry.name === item.name);
+              if (index >= 0) firebaseInboxItems[index] = result.item;
+              return renderDetail(result.item);
+            }
+            return setInboxError(result?.message || "メールの状態が変わりました。もう一度確認してください。");
+          }
+          removeFirebaseInboxItemLocally(item); renderList();
+        });
+      };
+
+      renderList();
     }
 
     async function syncFirebaseNow() {
-      if (!window.trackerValorantApi.syncFirebaseAccount) return { ok: false };
+      if (accountGateState !== "active") return { ok: false, skipped: true, blocked: accountGateState === "blocked", message: accountGateState === "blocked" ? "このGoogleアカウントは利用停止中です。" : "アカウント状態を確認中です。" };
+      if (!window.trackerValorantApi.syncFirebaseAccount) return { ok: false, message: "Firebase同期機能が見つかりません" };
       try {
         const result = await window.trackerValorantApi.syncFirebaseAccount(getFirebaseInventory());
         if (result?.ok) {
           setToolBlocked(Boolean(result.blocked), result.message || "");
-          showFirebaseInboxQueue(result.inbox || []);
+          setFirebaseMailboxKey("google");
+          showFirebaseInboxQueue(result.inbox || [], result.inboxNextPageToken || "");
+          if (result.inboxError) return { ...result, ok: false, message: result.inboxError };
         }
         return result;
       } catch (error) {
@@ -1538,272 +2525,133 @@
       syncFirebaseQuietly();
     });
 
-    function formatAdminDate(value) {
-      const date = value ? new Date(value) : null;
-      if (!date || Number.isNaN(date.getTime())) return "-";
-      return date.toLocaleString("ja-JP", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
-    }
 
-    function showAdminListView() {
-      currentAdminSendTarget = null;
-      currentAdminActionMode = "send";
-      if (adminListPanel) adminListPanel.style.display = "grid";
-      if (adminImplementationTestPanel) adminImplementationTestPanel.style.display = "none";
-      if (adminSendPanel) adminSendPanel.style.display = "none";
-      if (adminSendTargetLabel) adminSendTargetLabel.textContent = "送信画面";
-      if (adminSendItemButton) adminSendItemButton.textContent = "送信";
-    }
 
-    function showAdminImplementationTestView() {
-      currentAdminSendTarget = null;
-      currentAdminActionMode = "test";
-      if (adminListPanel) adminListPanel.style.display = "none";
-      if (adminSendPanel) adminSendPanel.style.display = "none";
-      if (adminImplementationTestPanel) adminImplementationTestPanel.style.display = "grid";
-      if (adminImplementationTestStatus) adminImplementationTestStatus.textContent = "";
-    }
-
-    function showAdminSendView(target, mode = "send") {
-      currentAdminSendTarget = target;
-      currentAdminActionMode = mode;
-      if (adminListPanel) adminListPanel.style.display = "none";
-      if (adminImplementationTestPanel) adminImplementationTestPanel.style.display = "none";
-      if (adminSendPanel) adminSendPanel.style.display = "grid";
-      if (adminSendTargetLabel) {
-        if (mode === "confiscate") {
-          adminSendTargetLabel.textContent = `${target?.riotId || "-"} から没収`;
-        } else {
-          adminSendTargetLabel.textContent = target?.bulk ? "一括送信" : `${target?.riotId || "-"} に送信`;
-        }
-      }
-      if (adminSendItemButton) adminSendItemButton.textContent = mode === "confiscate" ? "没収" : "送信";
-    }
-
-    function renderAdminUsers(users) {
-      if (!adminUsersList) return;
-      currentAdminUsersSnapshot = Array.isArray(users) ? JSON.parse(JSON.stringify(users)) : [];
-      if (!Array.isArray(users) || !users.length) {
-        adminUsersList.innerHTML = `<div class="admin-empty">まだ使用アカウントがありません</div>`;
-        return;
-      }
-
-      adminUsersList.innerHTML = users.map((user) => {
-        const puuid = user.puuid || user.id || "";
-        const blocked = user.status === "blocked";
-        return `
-          <div class="admin-user-item" data-puuid="${puuid}" data-riot-id="${cleanValue(user.riotId || "-")}">
-            <div class="admin-user-main">
-              <strong>${cleanValue(user.riotId || "-")}</strong>
-              <span>最終ログイン：${formatAdminDate(user.lastSeenAt)}</span>
-              <span>Ver. ${cleanValue(user.appVersion || "不明")}</span>
-              <span>所持KP ${Number(user.kp || 0)} / 所持AP ${Number(user.ap || 0)}</span>
-              <span>status：${cleanValue(user.status || "pending")}</span>
-            </div>
-            <div class="admin-user-actions">
-              <button type="button" class="admin-open-send-button">送信</button>
-              <button type="button" class="admin-open-confiscate-button">没収</button>
-              <button type="button" class="admin-toggle-ban-button">${blocked ? "解除" : "BAN"}</button>
-            </div>
+    function ensureUpdateOverlay() {
+      let overlay = document.getElementById("appUpdateOverlay");
+      if (overlay) return overlay;
+      overlay = document.createElement("div");
+      overlay.id = "appUpdateOverlay";
+      overlay.className = "app-update-overlay";
+      overlay.innerHTML = `
+        <section class="app-update-panel" role="dialog" aria-modal="true">
+          <div class="app-update-kicker">SYSTEM UPDATE</div>
+          <h2 class="app-update-title"></h2>
+          <div class="app-update-message"></div>
+          <div class="app-update-progress">
+            <div class="app-update-progress-track"><span></span></div>
+            <strong>0%</strong>
           </div>
-        `;
-      }).join("");
+          <div class="app-update-notes"></div>
+          <div class="app-update-actions"><button type="button" class="app-update-restart">今すぐ再起動</button><button type="button" class="app-update-confirm">あとで</button></div>
+        </section>
+      `;
+      document.body.appendChild(overlay);
+      overlay.querySelector(".app-update-confirm").addEventListener("click", () => {
+        if (overlay.dataset.locked === "true") return;
+        overlay.classList.remove("is-open");
+      });
+      overlay.querySelector(".app-update-restart").addEventListener("click", async () => {
+        if (overlay.dataset.locked === "true") return;
+        const result = await window.trackerValorantApi.installDownloadedUpdate?.();
+        if (!result?.ok) {
+          overlay.querySelector(".app-update-message").textContent = result?.message || "更新の再起動に失敗しました。";
+        }
+      });
+      return overlay;
     }
 
-    async function loadAdminUsers() {
-      if (!adminUsersList || !window.trackerValorantApi.listFirebaseUsers) return;
-      showAdminListView();
-      adminUsersList.innerHTML = `<div class="admin-empty">読み込み中</div>`;
-      try {
-        const result = await window.trackerValorantApi.listFirebaseUsers();
-        renderAdminUsers(result.users || []);
-      } catch (error) {
-        adminUsersList.innerHTML = `<div class="admin-empty">読み込み失敗</div>`;
-      }
-    }
+    function showUpdateStatus(payload = {}) {
+      const overlay = ensureUpdateOverlay();
+      const title = overlay.querySelector(".app-update-title");
+      const message = overlay.querySelector(".app-update-message");
+      const progress = overlay.querySelector(".app-update-progress");
+      const progressBar = overlay.querySelector(".app-update-progress-track span");
+      const progressText = overlay.querySelector(".app-update-progress strong");
+      const notes = overlay.querySelector(".app-update-notes");
+      const confirmButton = overlay.querySelector(".app-update-confirm");
+      const restartButton = overlay.querySelector(".app-update-restart");
+      notes.style.display = "none";
+      notes.textContent = "";
+      progress.style.display = "";
+      confirmButton.style.display = "none";
+      restartButton.style.display = "none";
+      overlay.dataset.locked = "true";
 
-    function getAdminItemPayload() {
-      const checked = new Set(Array.from(document.querySelectorAll(".admin-item-check:checked")).map((input) => input.dataset.field));
-      return {
-        kp: checked.has("kp") ? Number(document.getElementById("adminItemKpInput")?.value) || 0 : 0,
-        ap: checked.has("ap") ? Number(document.getElementById("adminItemApInput")?.value) || 0 : 0,
-        ticket15: checked.has("ticket15") ? Number(document.getElementById("adminItemTicket15Input")?.value) || 0 : 0,
-        ticket2: checked.has("ticket2") ? Number(document.getElementById("adminItemTicket2Input")?.value) || 0 : 0
-      };
-    }
-
-    function setAdminImplementationTestStatus(message) {
-      if (adminImplementationTestStatus) adminImplementationTestStatus.textContent = message || "";
-    }
-
-    function saveImplementationTestState() {
-      const trackerState = window.collectionGame?.getImplementationTestState
-        ? window.collectionGame.getImplementationTestState()
-        : null;
-      if (!trackerState) {
-        setAdminImplementationTestStatus("保存できませんでした");
+      if (payload.state === "available") {
+        title.textContent = "最新バージョンが見つかりました";
+        message.textContent = "アップデートをダウンロードしています";
+        progressBar.style.width = "0%";
+        progressText.textContent = "0%";
+      } else if (payload.state === "downloading") {
+        const percent = Math.max(0, Math.min(100, Math.round(Number(payload.percent) || 0)));
+        title.textContent = "アップデート中";
+        message.textContent = "ダウンロードしています";
+        progressBar.style.width = `${percent}%`;
+        progressText.textContent = `${percent}%`;
+      } else if (payload.state === "downloaded") {
+        title.textContent = "ダウンロード完了";
+        message.textContent = "ダウンロードが完了しました。今すぐ再起動するか、あとで更新できます。";
+        progressBar.style.width = "100%";
+        progressText.textContent = "100%";
+        confirmButton.style.display = "";
+        restartButton.style.display = "";
+        overlay.dataset.locked = "false";
+      } else if (payload.state === "error") {
+        title.textContent = "アップデート失敗";
+        message.textContent = payload.message || "アップデートに失敗しました";
+        progress.style.display = "none";
+        confirmButton.style.display = "";
+        overlay.dataset.locked = "false";
+      } else {
         return;
       }
-      localStorage.setItem("admin_implementation_test_state_v1", JSON.stringify({
-        savedAt: new Date().toISOString(),
-        trackerState,
-        adminUsers: currentAdminUsersSnapshot
+      overlay.classList.add("is-open");
+    }
+
+    function showReleaseNotes(info = {}) {
+      const notice = info.pendingUpdateNotice;
+      if (!notice?.version) return;
+      const seenKey = "tracker.updateNoticeSeen";
+      if (localStorage.getItem(seenKey) === notice.version) return;
+      const overlay = ensureUpdateOverlay();
+      const title = overlay.querySelector(".app-update-title");
+      const message = overlay.querySelector(".app-update-message");
+      const progress = overlay.querySelector(".app-update-progress");
+      const notes = overlay.querySelector(".app-update-notes");
+      const confirmButton = overlay.querySelector(".app-update-confirm");
+      const restartButton = overlay.querySelector(".app-update-restart");
+      title.textContent = `バージョン${notice.version}にアップデートされました`;
+      message.textContent = "今回の変更点";
+      progress.style.display = "none";
+      notes.style.display = "";
+      const noteLines = String(notice.releaseNotes || "安定性の改善と機能更新を行いました。")
+        .split(/\r?\n/)
+        .map((line) => line.replace(/^[-*]\s*/, "").trim())
+        .filter(Boolean);
+      notes.replaceChildren(...noteLines.map((line) => {
+        const item = document.createElement("div");
+        item.textContent = line;
+        return item;
       }));
-      setAdminImplementationTestStatus("現在状態を保存しました");
+      confirmButton.style.display = "";
+      restartButton.style.display = "none";
+      overlay.dataset.locked = "false";
+      confirmButton.onclick = () => {
+        localStorage.setItem(seenKey, notice.version);
+        overlay.classList.remove("is-open");
+      };
+      overlay.classList.add("is-open");
     }
 
-    function restoreImplementationTestState() {
-      const raw = localStorage.getItem("admin_implementation_test_state_v1");
-      if (!raw) {
-        setAdminImplementationTestStatus("保存状態がありません");
-        return;
-      }
-      try {
-        const saved = JSON.parse(raw);
-        if (saved.trackerState && window.collectionGame?.restoreImplementationTestState) {
-          window.collectionGame.restoreImplementationTestState(saved.trackerState);
-        }
-        renderAdminUsers(Array.isArray(saved.adminUsers) ? saved.adminUsers : []);
-        showAdminListView();
-        if (adminPinStatus) adminPinStatus.textContent = "保存状態を呼び出しました";
-      } catch (error) {
-        setAdminImplementationTestStatus("呼び出しに失敗しました");
-      }
-    }
-    if (adminPinInput) {
-      adminPinInput.addEventListener("input", () => {
-        adminPinInput.value = adminPinInput.value.replace(/\D/g, "").slice(0, 4);
-      });
-    }
-
-    if (adminPinButton) {
-      adminPinButton.addEventListener("click", async () => {
-        const pin = adminPinInput ? adminPinInput.value : "";
-        const result = window.trackerValorantApi.checkAdminPin
-          ? await window.trackerValorantApi.checkAdminPin(pin)
-          : { ok: false };
-        if (!result.ok) {
-          if (adminPinStatus) adminPinStatus.textContent = "PINが違います";
-          if (adminPanel) adminPanel.classList.remove("is-open");
-          return;
-        }
-        if (adminPinStatus) adminPinStatus.textContent = "";
-        if (adminPanel) adminPanel.classList.add("is-open");
-        await syncFirebaseNow();
-        await loadAdminUsers();
-      });
-    }
-
-    if (adminRefreshButton) {
-      adminRefreshButton.addEventListener("click", async () => {
-        await syncFirebaseNow();
-        await loadAdminUsers();
-      });
-    }
-
-    if (adminBulkSendButton) {
-      adminBulkSendButton.addEventListener("click", () => {
-        showAdminSendView({ bulk: true });
-      });
-    }
-
-    if (adminImplementationTestButton) {
-      adminImplementationTestButton.addEventListener("click", () => {
-        showAdminImplementationTestView();
-      });
-    }
-
-    if (adminImplementationTestBackButton) adminImplementationTestBackButton.addEventListener("click", showAdminListView);
-    if (adminTestSaveButton) adminTestSaveButton.addEventListener("click", saveImplementationTestState);
-    if (adminTestRestoreButton) adminTestRestoreButton.addEventListener("click", restoreImplementationTestState);
-    if (adminTestResetLevelButton) {
-      adminTestResetLevelButton.addEventListener("click", () => {
-        if (window.collectionGame?.resetTrackerLevelOnly) window.collectionGame.resetTrackerLevelOnly();
-        setAdminImplementationTestStatus("トラッカーレベルを初期化しました");
-      });
-    }
-    if (adminTestResetItemsButton) {
-      adminTestResetItemsButton.addEventListener("click", () => {
-        if (window.collectionGame?.resetItemsOnly) window.collectionGame.resetItemsOnly();
-        setAdminImplementationTestStatus("アイテムを初期化しました");
-      });
-    }
-    if (adminTestResetCollectionButton) {
-      adminTestResetCollectionButton.addEventListener("click", () => {
-        if (window.collectionGame?.resetCollectionOnly) window.collectionGame.resetCollectionOnly();
-        setAdminImplementationTestStatus("コレクションを初期化しました");
-      });
-    }
-
-    if (adminBackButton) adminBackButton.addEventListener("click", loadAdminUsers);
-
-    if (adminUsersList) {
-      adminUsersList.addEventListener("click", async (event) => {
-        const item = event.target.closest(".admin-user-item");
-        if (!item) return;
-        const puuid = item.dataset.puuid || "";
-        if (!puuid) return;
-
-        if (event.target.closest(".admin-open-send-button")) {
-          showAdminSendView({ puuid, riotId: item.dataset.riotId || "-" }, "send");
-          return;
-        }
-
-        if (event.target.closest(".admin-open-confiscate-button")) {
-          showAdminSendView({ puuid, riotId: item.dataset.riotId || "-" }, "confiscate");
-          return;
-        }
-
-        if (event.target.closest(".admin-toggle-ban-button")) {
-          const isBlocked = item.querySelector(".admin-toggle-ban-button")?.textContent === "解除";
-          if (isBlocked) {
-            await window.trackerValorantApi.allowFirebaseUser(puuid);
-          } else {
-            await window.trackerValorantApi.banFirebaseUser(puuid);
-          }
-          await loadAdminUsers();
-        }
-      });
-    }
-
-    if (adminSendMessageButton) {
-      adminSendMessageButton.addEventListener("click", async () => {
-        if (!currentAdminSendTarget) return;
-        const title = adminMessageTitleInput?.value || "";
-        const message = adminMessageBodyInput?.value || "";
-        if (!message.trim()) return;
-        if (currentAdminSendTarget.bulk) {
-          await window.trackerValorantApi.sendFirebaseBulkMessage(title, message);
-        } else {
-          await window.trackerValorantApi.sendFirebaseMessage(currentAdminSendTarget.puuid, { title, message });
-        }
-        if (adminMessageTitleInput) adminMessageTitleInput.value = "";
-        if (adminMessageBodyInput) adminMessageBodyInput.value = "";
-        await loadAdminUsers();
-      });
-    }
-
-    if (adminSendItemButton) {
-      adminSendItemButton.addEventListener("click", async () => {
-        if (!currentAdminSendTarget) return;
-        const rewards = getAdminItemPayload();
-        if (!rewards.kp && !rewards.ap && !rewards.ticket15 && !rewards.ticket2) return;
-        if (currentAdminActionMode === "confiscate") {
-          if (!currentAdminSendTarget.bulk && window.trackerValorantApi.confiscateFirebaseUserItems) {
-            await window.trackerValorantApi.confiscateFirebaseUserItems(currentAdminSendTarget.puuid, rewards);
-          }
-        } else if (currentAdminSendTarget.bulk) {
-          await window.trackerValorantApi.sendFirebaseBulkItem(rewards);
-        } else {
-          await window.trackerValorantApi.sendFirebaseItem(currentAdminSendTarget.puuid, rewards);
-        }
-        document.querySelectorAll(".admin-item-check").forEach((input) => { input.checked = false; });
-        ["adminItemKpInput", "adminItemApInput", "adminItemTicket15Input", "adminItemTicket2Input"].forEach((id) => {
-          const input = document.getElementById(id);
-          if (input) input.value = "0";
-        });
-        await loadAdminUsers();
-      });
-    }
+    window.trackerValorantApi.onUpdateStatus?.(showUpdateStatus);
+    window.trackerValorantApi.getAppReleaseInfo?.()
+      .then((info) => {
+        const versionBadge = document.getElementById("appVersionBadge");
+        if (versionBadge && info?.version) versionBadge.textContent = `v${info.version}`;
+        showReleaseNotes(info);
+      })
+      .catch(() => {});
 
     syncFirebaseNow();
 
@@ -1817,20 +2665,32 @@
         playersButton.disabled = false;
         playersButtonUnlockTimer = null;
       }, 20000);
-      playersStatus.textContent = "確認中...";
+      const originalButtonText = playersButton.textContent;
+      playersButton.textContent = "更新中…";
+      playersStatus.textContent = "更新中…";
       clearPlayers();
       try {
+        await window.trackerValorantApi.stopAutoWatch?.();
+      } catch (error) {}
+      try {
+        const syncResult = await syncFirebaseNow();
+        if (syncResult && !syncResult.ok && syncResult.message) {
+          playersStatus.textContent = `Firebase同期失敗：${syncResult.message}`;
+        }
         const result = await window.trackerValorantApi.getCurrentPlayers();
         if (!result.ok) {
           playersStatus.textContent = "取得できませんでした：" + (result.message || "");
           return;
         }
         applyPlayersPayload(result.data, result.message);
+        syncFirebaseQuietly();
       } catch (error) {
         playersStatus.textContent = "取得できませんでした：" + error.message;
       } finally {
+        await startMonitoringAutomatically();
         isLoadingPlayers = false;
         playersButton.disabled = false;
+        playersButton.textContent = originalButtonText;
         if (playersButtonUnlockTimer) {
           clearTimeout(playersButtonUnlockTimer);
           playersButtonUnlockTimer = null;
@@ -1838,6 +2698,9 @@
       }
     });
   </script>
+  <script src="./onboarding-logic.js"></script>
+  <script src="./startup-camera.js"></script>
+  <script type="module" src="./onboarding.js"></script>
 </body>
 </html>
 

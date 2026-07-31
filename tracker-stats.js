@@ -360,7 +360,7 @@ function getCurrentMatchStats(match, puuid) {
 }
 
 function calculateFetchRate(players, isDeathmatch) {
-  const fields = isDeathmatch ? ["rank", "peakRank"] : ["rank", "kd", "hsRate", "recentResults", "peakRank"];
+  const fields = isDeathmatch ? ["rank", "hsRate", "peakRank"] : ["rank", "kd", "hsRate", "recentResults", "peakRank"];
   const total = players.length * fields.length;
   const done = players.reduce((count, player) => count + fields.filter((field) => isMeaningfulValue(player[field])).length, 0);
   const percent = total > 0 ? Math.round((done / total) * 100) : 0;

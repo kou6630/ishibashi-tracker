@@ -1,4 +1,4 @@
-const fs = require("fs");
+﻿const fs = require("fs");
 const path = require("path");
 const https = require("https");
 
@@ -8,23 +8,68 @@ const GLZ_HOST = "glz-ap-1.ap.a.pvp.net";
 const PD_HOST = "pd.ap.a.pvp.net";
 const LOCAL_API_TIMEOUT_MS = 3000;
 const RIOT_API_TIMEOUT_MS = 3000;
-const HENRIK_API_TIMEOUT_MS = 5000;
+const HENRIK_API_TIMEOUT_MS = 10000;
+let customRiotClientPath = "";
 
-function readLockfileData() {
+function configureTrackerApi(options = {}) {
+  customRiotClientPath = String(options.riotClientPath || "").trim();
+}
+
+function getDefaultRiotClientConfigPath() {
   const localAppData = process.env.LOCALAPPDATA;
-  if (!localAppData) return { ok: false, message: "LOCALAPPDATAが見つかりません" };
+  return localAppData ? path.join(localAppData, "Riot Games", "Riot Client", "Config") : "";
+}
 
-  const lockfilePath = path.join(localAppData, "Riot Games", "Riot Client", "Config", "lockfile");
-  if (!fs.existsSync(lockfilePath)) {
-    return { ok: false, message: "lockfileが見つかりません。Riot Client / VALORANTを起動してください。" };
+function getLockfilePathCandidates() {
+  const candidates = [];
+  const configured = customRiotClientPath;
+
+  if (configured) {
+    candidates.push(
+      path.join(configured, "lockfile"),
+      path.join(configured, "Config", "lockfile"),
+      path.join(configured, "Riot Client", "Config", "lockfile"),
+      path.join(configured, "Riot Games", "Riot Client", "Config", "lockfile")
+    );
   }
 
-  const text = fs.readFileSync(lockfilePath, "utf8").trim();
-  const parts = text.split(":");
-  if (parts.length < 5) return { ok: false, message: "lockfileの形式が不正です" };
+  const defaultConfigPath = getDefaultRiotClientConfigPath();
+  if (defaultConfigPath) candidates.push(path.join(defaultConfigPath, "lockfile"));
 
-  const [name, pid, port, password, protocol] = parts;
-  return { ok: true, message: "lockfile取得成功", data: { name, pid, port, password, protocol } };
+  return [...new Set(candidates)];
+}
+
+function readLockfileData() {
+  const candidates = getLockfilePathCandidates();
+  if (!candidates.length) {
+    return { ok: false, message: "LOCALAPPDATAが見つかりません。設定からRiot Clientのフォルダを指定してください。" };
+  }
+
+  const lockfilePath = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!lockfilePath) {
+    return {
+      ok: false,
+      message: "lockfileが見つかりません。VALORANTを起動するか、設定でRiot Clientのフォルダを指定してください。",
+      searchedPaths: candidates
+    };
+  }
+
+  try {
+    const text = fs.readFileSync(lockfilePath, "utf8").trim();
+    const parts = text.split(":");
+    if (parts.length < 5) {
+      return { ok: false, message: "lockfileの形式が不正です。Riot Clientを再起動してください。", path: lockfilePath };
+    }
+
+    const [name, pid, port, password, protocol] = parts;
+    return { ok: true, message: "lockfile取得成功", path: lockfilePath, data: { name, pid, port, password, protocol } };
+  } catch (error) {
+    return {
+      ok: false,
+      message: "lockfileを読み取れません。権限やセキュリティ設定を確認してください。" + (error?.message ? " (" + error.message + ")" : ""),
+      path: lockfilePath
+    };
+  }
 }
 
 function requestLocalApi(lockfile, endpoint) {
@@ -104,10 +149,11 @@ function requestHttpsJson(host, endpoint, options = {}) {
   });
 }
 
-function requestValorantApi({ host, endpoint, accessToken, entitlementToken, clientVersion, method = "GET", body = null }) {
+function requestValorantApi({ host, endpoint, accessToken, entitlementToken, clientVersion, method = "GET", body = null, timeoutMs = RIOT_API_TIMEOUT_MS }) {
   return requestHttpsJson(host, endpoint, {
     method,
     body,
+    timeoutMs,
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "X-Riot-Entitlements-JWT": entitlementToken,
@@ -140,7 +186,7 @@ async function getClientVersion() {
 async function getCurrentGameContext() {
   const lockfileResult = readLockfileData();
   if (!lockfileResult.ok) {
-    return { ok: false, waiting: true, message: "VALORANT待機中" };
+    return { ok: false, waiting: true, message: lockfileResult.message || "VALORANT待機中" };
   }
 
   const lockfile = lockfileResult.data;
@@ -152,7 +198,7 @@ async function getCurrentGameContext() {
   try {
     const currentGame = await requestValorantApi({
       host: GLZ_HOST,
-      endpoint: `/core-game/v1/players/${puuid}`,
+      endpoint: "/core-game/v1/players/" + puuid,
       accessToken: token.accessToken,
       entitlementToken: token.token,
       clientVersion
@@ -163,7 +209,7 @@ async function getCurrentGameContext() {
     try {
       const pregame = await requestValorantApi({
         host: GLZ_HOST,
-        endpoint: `/pregame/v1/players/${puuid}`,
+        endpoint: "/pregame/v1/players/" + puuid,
         accessToken: token.accessToken,
         entitlementToken: token.token,
         clientVersion
@@ -215,8 +261,102 @@ async function getMatchDetailsByContext(context, matchId) {
     endpoint: `/match-details/v1/matches/${matchId}`,
     accessToken: context.token.accessToken,
     entitlementToken: context.token.token,
-    clientVersion: context.clientVersion
+    clientVersion: context.clientVersion,
+    timeoutMs: 10000
   });
+}
+
+function getRiotHistoryEntries(history) {
+  if (Array.isArray(history?.History)) return history.History;
+  if (Array.isArray(history?.history)) return history.history;
+  if (Array.isArray(history)) return history;
+  return [];
+}
+
+function getRiotQueueId(value) {
+  return String(
+    value?.QueueID
+    || value?.QueueId
+    || value?.queueID
+    || value?.queueId
+    || value?.MatchInfo?.QueueID
+    || value?.MatchInfo?.QueueId
+    || value?.matchInfo?.queueID
+    || value?.matchInfo?.queueId
+    || ""
+  ).toLowerCase();
+}
+
+function getRiotMatchId(value) {
+  return String(
+    value?.MatchID
+    || value?.MatchId
+    || value?.matchID
+    || value?.matchId
+    || value?.MatchInfo?.MatchID
+    || value?.matchInfo?.matchId
+    || ""
+  );
+}
+
+function normalizeRiotCompetitiveMatch(match, puuid, fallback = {}) {
+  const matchInfo = match?.MatchInfo || match?.matchInfo || {};
+  const players = Array.isArray(match?.Players) ? match.Players : (Array.isArray(match?.players) ? match.players : []);
+  const selfPlayer = players.find((player) => String(player?.Subject || player?.subject || player?.puuid || "") === puuid);
+  const stats = selfPlayer?.Stats || selfPlayer?.stats || {};
+  const gameStart = Number(
+    matchInfo.GameStartMillis
+    || matchInfo.gameStartMillis
+    || matchInfo.GameStartTime
+    || matchInfo.gameStartTime
+    || fallback.GameStartTime
+    || fallback.gameStartTime
+    || 0
+  );
+
+  return {
+    matchId: getRiotMatchId(match) || getRiotMatchId(fallback),
+    startedAt: gameStart > 0 ? new Date(gameStart).toISOString() : "",
+    mapName: matchInfo.MapID || matchInfo.MapId || matchInfo.mapId || fallback.MapID || fallback.mapId || "-",
+    characterId: selfPlayer?.CharacterID || selfPlayer?.CharacterId || selfPlayer?.characterId || "",
+    agentName: "",
+    agentImage: "",
+    kills: Math.max(0, Number(stats.Kills ?? stats.kills ?? 0) || 0),
+    assists: Math.max(0, Number(stats.Assists ?? stats.assists ?? 0) || 0)
+  };
+}
+
+async function getRiotCompetitiveMatchesByContext(context, size = 5) {
+  const safeSize = Math.max(1, Math.min(10, Number(size) || 5));
+  const history = await requestValorantApi({
+    host: PD_HOST,
+    endpoint: `/match-history/v1/history/${context.puuid}?startIndex=0&endIndex=20`,
+    accessToken: context.token.accessToken,
+    entitlementToken: context.token.token,
+    clientVersion: context.clientVersion,
+    timeoutMs: 10000
+  });
+  const entries = getRiotHistoryEntries(history);
+  const matches = [];
+
+  for (const entry of entries) {
+    if (matches.length >= safeSize) break;
+    const queueId = getRiotQueueId(entry);
+    if (queueId && queueId !== "competitive") continue;
+    const matchId = getRiotMatchId(entry);
+    if (!matchId) continue;
+
+    try {
+      const details = await getMatchDetailsByContext(context, matchId);
+      const detailQueueId = getRiotQueueId(details);
+      if ((queueId || detailQueueId) !== "competitive") continue;
+      matches.push(normalizeRiotCompetitiveMatch(details, context.puuid, entry));
+    } catch (error) {
+      if ([401, 403, 429].includes(Number(error?.statusCode))) throw error;
+    }
+  }
+
+  return matches;
 }
 
 function findHenrikSelfPlayer(match, puuid) {
@@ -262,9 +402,11 @@ module.exports = {
   HENRIK_API_KEY,
   PD_HOST,
   REGION,
+  configureTrackerApi,
   getClientVersion,
   getCurrentGameContext,
   getHenrikCompetitiveMatchesByPuuid,
+  getRiotCompetitiveMatchesByContext,
   getMatchByContext,
   getMatchDetailsByContext,
   getNamesByPuuid,

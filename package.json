@@ -1,11 +1,13 @@
 {
   "name": "valorant-tracker",
-  "version": "1.2.2",
+  "version": "1.4.12",
   "description": "石橋ぶりぶりトラッカー",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win"
+    "test": "node --test tests/*.test.js",
+    "build": "electron-builder --win",
+    "assets:prepare": "node scripts/build-asset-manifest.js"
   },
   "build": {
     "appId": "com.ishibashi.valoranttracker",
@@ -29,13 +31,28 @@
       "tracker-stats.js",
       "tracker-data.js",
       "collection-game.js",
+      "collection-operations.js",
+      "kayo-farm-data.js",
+      "kayo-farm.js",
+      "brim-gacha.js",
+      "google-account.js",
+      "shop.js",
+      "login-bonus.js",
+      "inbox-utils.js",
       "tracker-style.css",
-      "img/**/*",
+      "onboarding-style.css",
+      "onboarding-logic.js",
+      "onboarding-scene.js",
+      "startup-camera.js",
+      "asset-manager.js",
+      "asset-url.js",
+      "onboarding.js",
+      "img/bootstrap/**/*",
       "package.json"
     ],
     "win": {
       "target": "nsis",
-      "artifactName": "石橋ぶりぶりトラッカー-Setup-${version}.${ext}"
+      "artifactName": "valorant-tracker-setup-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -47,11 +64,12 @@
   },
   "license": "ISC",
   "type": "commonjs",
-  "dependencies": {
-    "electron-updater": "^6.3.9"
-  },
   "devDependencies": {
     "electron": "^39.2.7",
     "electron-builder": "^26.0.12"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9",
+    "three": "^0.180.0"
   }
 }

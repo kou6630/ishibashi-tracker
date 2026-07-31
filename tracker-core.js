@@ -1,12 +1,16 @@
-const fs = require("fs");
+﻿const fs = require("fs");
 const path = require("path");
 
 const {
+  GLZ_HOST,
   REGION,
+  configureTrackerApi,
+  getClientVersion,
   getCurrentGameContext,
   getHenrikCompetitiveMatchesByPuuid,
   getMatchByContext,
   getNamesByPuuid,
+  getRiotCompetitiveMatchesByContext,
   readLockfileData,
   requestHenrik,
   requestLocalApi
@@ -44,7 +48,8 @@ let autoWatchTimer = null;
 let lastAutoMatchId = "";
 let lastAutoMode = "";
 let stopFetchRequested = false;
-let isFetchingPlayers = false;
+let activeFetchSession = null;
+let fetchSessionSeq = 0;
 let lastAutoPlayerCount = 0;
 let lastShownPlayers = [];
 let lastShownMatchId = "";
@@ -55,11 +60,15 @@ const AUTO_WATCH_INTERVAL_MS = 3000;
 const PREGAME_FETCH_ROUNDS = 10;
 const INGAME_FETCH_ROUNDS = 100;
 const COMPETITIVE_KP_MATCH_LIMIT = 5;
-const COMPETITIVE_KP_CACHE_MS = 120000;
+const COMPETITIVE_KP_CACHE_MS = 15000;
+const COMPETITIVE_KP_CACHE_FILE = "competitive-kp-cache.json";
+const COMPETITIVE_KP_DIAGNOSTICS_FILE = "competitive-kp-diagnostics.json";
 let competitiveKpMatchesCache = { puuid: "", matches: [], fetchedAt: 0 };
+let competitiveKpMatchesInFlight = null;
 
 function configureTrackerCore(options = {}) {
   userDataPath = options.userDataPath || userDataPath;
+  configureTrackerApi({ riotClientPath: options.riotClientPath || "" });
   sendPlayersProgressCallback = typeof options.sendPlayersProgress === "function" ? options.sendPlayersProgress : sendPlayersProgressCallback;
   sendAutoStatusCallback = typeof options.sendAutoStatus === "function" ? options.sendAutoStatus : sendAutoStatusCallback;
   checkAccountAccessCallback = typeof options.checkAccountAccess === "function" ? options.checkAccountAccess : checkAccountAccessCallback;
@@ -110,6 +119,7 @@ function normalizeCompetitiveKpMatch(match) {
   return {
     ...match,
     matchId: normalizedMatchId,
+    mapName: getMapName(match?.mapName || match?.mapId || ""),
     agentName,
     agentImage: getCompetitiveAgentImagePath(agentName, match?.agentImage || ""),
     kills: Math.max(0, Number(match?.kills) || 0),
@@ -123,19 +133,170 @@ function isRateLimitError(error) {
   return Number(error?.statusCode) === 429 || String(error?.message || "").includes("429");
 }
 
-function getCachedCompetitiveKpMatches(puuid) {
-  const isSamePlayer = competitiveKpMatchesCache.puuid === puuid;
-  const isFresh = Date.now() - competitiveKpMatchesCache.fetchedAt < COMPETITIVE_KP_CACHE_MS;
-  return isSamePlayer && isFresh ? competitiveKpMatchesCache.matches : [];
+function getCompetitiveKpDiskCache(puuid) {
+  const saved = readJson(COMPETITIVE_KP_CACHE_FILE, { entries: {} });
+  const entry = saved?.entries?.[puuid];
+  if (!entry || !Array.isArray(entry.matches)) return null;
+  return {
+    puuid,
+    matches: entry.matches,
+    fetchedAt: Number(entry.fetchedAt) || 0
+  };
 }
 
-async function fetchCompetitiveKpMatchesByPuuid(puuid, { useCache = true } = {}) {
-  const cached = getCachedCompetitiveKpMatches(puuid);
-  if (useCache && cached.length) return cached;
+function getCachedCompetitiveKpMatches(puuid, { allowStale = false } = {}) {
+  let entry = competitiveKpMatchesCache.puuid === puuid ? competitiveKpMatchesCache : null;
+  if (!entry?.matches?.length) entry = getCompetitiveKpDiskCache(puuid);
+  if (!entry?.matches?.length) return null;
+  const isFresh = Date.now() - entry.fetchedAt < COMPETITIVE_KP_CACHE_MS;
+  return allowStale || isFresh ? entry : null;
+}
 
-  const matches = await getHenrikCompetitiveMatchesByPuuid(puuid, COMPETITIVE_KP_MATCH_LIMIT);
-  competitiveKpMatchesCache = { puuid, matches, fetchedAt: Date.now() };
-  return matches;
+function saveCompetitiveKpMatches(puuid, matches, source) {
+  const fetchedAt = Date.now();
+  competitiveKpMatchesCache = { puuid, matches, fetchedAt, source };
+  const saved = readJson(COMPETITIVE_KP_CACHE_FILE, { version: 1, entries: {} });
+  const entries = saved?.entries && typeof saved.entries === "object" ? saved.entries : {};
+  entries[puuid] = { matches, fetchedAt, source };
+  const newestEntries = Object.fromEntries(
+    Object.entries(entries)
+      .sort((a, b) => Number(b[1]?.fetchedAt || 0) - Number(a[1]?.fetchedAt || 0))
+      .slice(0, 4)
+  );
+  writeJson(COMPETITIVE_KP_CACHE_FILE, { version: 1, entries: newestEntries });
+}
+
+function recordCompetitiveKpDiagnostic(payload) {
+  const rows = readJson(COMPETITIVE_KP_DIAGNOSTICS_FILE, []);
+  rows.push({
+    at: new Date().toISOString(),
+    source: payload.source || "",
+    ok: Boolean(payload.ok),
+    statusCode: Number(payload.statusCode) || 0,
+    durationMs: Math.max(0, Number(payload.durationMs) || 0),
+    category: payload.category || "",
+    message: String(payload.message || "").slice(0, 300)
+  });
+  writeJson(COMPETITIVE_KP_DIAGNOSTICS_FILE, rows.slice(-100));
+}
+
+function isTransientCompetitiveError(error) {
+  const status = Number(error?.statusCode) || 0;
+  return status === 408
+    || status === 429
+    || status >= 500
+    || /timeout|timed out|ECONNRESET|ECONNREFUSED|ENOTFOUND|EAI_AGAIN|socket/i.test(String(error?.message || ""));
+}
+
+async function retryCompetitiveRequest(task, attempts = 3) {
+  let lastError = null;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await task(attempt);
+    } catch (error) {
+      lastError = error;
+      const status = Number(error?.statusCode) || 0;
+      const canRefreshAuthentication = status === 401 || status === 403;
+      if (attempt >= attempts - 1 || (!isTransientCompetitiveError(error) && !canRefreshAuthentication)) throw error;
+      const delay = Math.round(400 * (2 ** attempt) + Math.random() * 250);
+      await sleep(delay);
+    }
+  }
+  throw lastError;
+}
+
+async function createCompetitiveRiotContext() {
+  const lockfileResult = readLockfileData();
+  if (!lockfileResult.ok) {
+    const error = new Error(lockfileResult.message || "VALORANT待機中");
+    error.category = "lockfile";
+    throw error;
+  }
+  const token = await requestLocalApi(lockfileResult.data, "/entitlements/v1/token");
+  const puuid = String(token?.subject || "");
+  if (!puuid) {
+    const error = new Error("現在のVALORANTアカウントを確認できませんでした。");
+    error.category = "account";
+    throw error;
+  }
+  return {
+    ok: true,
+    lockfile: lockfileResult.data,
+    token,
+    puuid,
+    host: GLZ_HOST,
+    clientVersion: await getClientVersion()
+  };
+}
+
+async function fetchCompetitiveKpMatches(context, { useCache = true } = {}) {
+  const puuid = context.puuid;
+  const cached = getCachedCompetitiveKpMatches(puuid);
+  if (useCache && cached) return { ...cached, cached: true };
+  if (competitiveKpMatchesInFlight?.puuid === puuid) return competitiveKpMatchesInFlight.promise;
+
+  const promise = (async () => {
+    const startedAt = Date.now();
+    let riotError = null;
+    try {
+      const matches = await retryCompetitiveRequest(async () => {
+        const freshContext = await createCompetitiveRiotContext();
+        return getRiotCompetitiveMatchesByContext(freshContext, COMPETITIVE_KP_MATCH_LIMIT);
+      });
+      if (matches.length) {
+        saveCompetitiveKpMatches(puuid, matches, "riot");
+        recordCompetitiveKpDiagnostic({ source: "riot", ok: true, durationMs: Date.now() - startedAt });
+        return { puuid, matches, fetchedAt: Date.now(), source: "riot", cached: false };
+      }
+      riotError = new Error("Riot側の試合履歴が空でした。");
+    } catch (error) {
+      riotError = error;
+      recordCompetitiveKpDiagnostic({
+        source: "riot",
+        ok: false,
+        statusCode: error?.statusCode,
+        durationMs: Date.now() - startedAt,
+        category: error?.category || "request",
+        message: error?.message
+      });
+    }
+
+    const henrikStartedAt = Date.now();
+    try {
+      const matches = await retryCompetitiveRequest(
+        () => getHenrikCompetitiveMatchesByPuuid(puuid, COMPETITIVE_KP_MATCH_LIMIT),
+        3
+      );
+      if (matches.length) {
+        saveCompetitiveKpMatches(puuid, matches, "henrik");
+        recordCompetitiveKpDiagnostic({ source: "henrik", ok: true, durationMs: Date.now() - henrikStartedAt });
+        return { puuid, matches, fetchedAt: Date.now(), source: "henrik", cached: false };
+      }
+      if (!riotError) return { puuid, matches: [], fetchedAt: Date.now(), source: "henrik", cached: false };
+    } catch (error) {
+      recordCompetitiveKpDiagnostic({
+        source: "henrik",
+        ok: false,
+        statusCode: error?.statusCode,
+        durationMs: Date.now() - henrikStartedAt,
+        category: isRateLimitError(error) ? "rate-limit" : "request",
+        message: error?.message
+      });
+      if (!riotError) riotError = error;
+      else riotError.fallbackError = error;
+    }
+
+    const stale = getCachedCompetitiveKpMatches(puuid, { allowStale: true });
+    if (stale) return { ...stale, source: stale.source || "local-cache", cached: true, stale: true, error: riotError };
+    throw riotError || new Error("試合履歴を取得できませんでした。");
+  })();
+
+  competitiveKpMatchesInFlight = { puuid, promise };
+  try {
+    return await promise;
+  } finally {
+    if (competitiveKpMatchesInFlight?.promise === promise) competitiveKpMatchesInFlight = null;
+  }
 }
 
 function sleep(ms) {
@@ -151,6 +312,24 @@ function withTimeout(promise, ms, fallback) {
 
 function sendPlayersProgress(payload) {
   sendPlayersProgressCallback(payload);
+}
+
+function isFetchingPlayers() {
+  return Boolean(activeFetchSession && !activeFetchSession.cancelled);
+}
+
+function cancelActiveFetch(reason = "cancelled") {
+  if (!activeFetchSession) return;
+  activeFetchSession.cancelled = true;
+  activeFetchSession.cancelReason = reason;
+}
+
+function isSessionActive(session) {
+  return Boolean(session && activeFetchSession === session && !session.cancelled);
+}
+
+function sendPlayersProgressForSession(session, payload) {
+  if (isSessionActive(session)) sendPlayersProgress(payload);
 }
 
 function sendAutoStatus(status, fetchRate = "") {
@@ -505,7 +684,9 @@ async function fetchPlayerInfo(player, namesByPuuid, isDeathmatch, lockedInfo = 
   let partyHistoryChecked = Boolean(lockedInfo?.partyHistoryChecked);
 
   const needsRank = !isMeaningfulValue(rank) || !isMeaningfulValue(peakRank);
-  const needsRecent = !isDeathmatch && (!isMeaningfulValue(hsRate) || !isMeaningfulValue(kd) || !isMeaningfulValue(recentResults));
+  const needsRecent = isDeathmatch
+    ? !isMeaningfulValue(hsRate)
+    : (!isMeaningfulValue(hsRate) || !isMeaningfulValue(kd) || !isMeaningfulValue(recentResults));
 
   if (needsRank) {
     try {
@@ -554,12 +735,16 @@ async function fetchPlayerInfo(player, namesByPuuid, isDeathmatch, lockedInfo = 
 }
 
 function isPlayerInfoComplete(playerInfo, isDeathmatch) {
-  if (isDeathmatch) return isMeaningfulValue(playerInfo.rank) || isMeaningfulValue(playerInfo.peakRank);
+  if (isDeathmatch) {
+    return isMeaningfulValue(playerInfo.rank)
+      && isMeaningfulValue(playerInfo.hsRate)
+      && isMeaningfulValue(playerInfo.peakRank);
+  }
   return isMeaningfulValue(playerInfo.rank) && isMeaningfulValue(playerInfo.peakRank) && isMeaningfulValue(playerInfo.hsRate) && isMeaningfulValue(playerInfo.kd) && isMeaningfulValue(playerInfo.recentResults);
 }
 
 function getPlayerFetchScore(playerInfo, isDeathmatch) {
-  const fields = isDeathmatch ? ["rank", "peakRank"] : ["rank", "peakRank", "hsRate", "kd", "recentResults"];
+  const fields = isDeathmatch ? ["rank", "hsRate", "peakRank"] : ["rank", "peakRank", "hsRate", "kd", "recentResults"];
   return fields.filter((field) => isMeaningfulValue(playerInfo?.[field])).length;
 }
 
@@ -608,60 +793,84 @@ function formatCompetitiveMatchDate(value) {
 }
 
 async function getCompetitiveKpMatches() {
-  const lockfileResult = readLockfileData();
-  if (!lockfileResult.ok) return { ok: false, message: "VALORANT待機中", matches: [] };
-
-  let puuid = "";
+  let context = null;
   try {
-    const token = await requestLocalApi(lockfileResult.data, "/entitlements/v1/token");
-    puuid = token?.subject || "";
-  } catch (error) {}
+    context = await createCompetitiveRiotContext();
+  } catch (error) {
+    return {
+      ok: false,
+      category: error?.category || "account",
+      message: error?.message || "VALORANTのアカウント情報を取得できませんでした。",
+      matches: []
+    };
+  }
 
-  if (!puuid) return { ok: false, message: "アカウント取得失敗", matches: [] };
+  const puuid = context.puuid;
   const access = await checkAccountAccessCallback({ puuid });
-  if (access?.blocked) return { ok: false, blocked: true, message: "このアカウントは利用停止中です。", matches: [] };
+  if (access?.blocked) return { ok: false, blocked: true, message: "\u3053\u306e\u30a2\u30ab\u30a6\u30f3\u30c8\u306f\u5229\u7528\u505c\u6b62\u4e2d\u3067\u3059\u3002", matches: [] };
 
   try {
-    const matches = await fetchCompetitiveKpMatchesByPuuid(puuid, { useCache: true });
+    const result = await fetchCompetitiveKpMatches(context, { useCache: true });
     return {
       ok: true,
-      matches: matches.map(normalizeCompetitiveKpMatch)
+      matches: result.matches.map(normalizeCompetitiveKpMatch),
+      source: result.source,
+      stale: Boolean(result.stale),
+      fetchedAt: result.fetchedAt,
+      message: result.stale
+        ? "最新の試合履歴を取得できなかったため、前回取得した履歴を表示しています。"
+        : ""
     };
   } catch (error) {
-    if (isRateLimitError(error)) {
-      const cached = getCachedCompetitiveKpMatches(puuid);
-      if (cached.length) {
-        return {
-          ok: true,
-          matches: cached.map(normalizeCompetitiveKpMatch),
-          message: "API制限中のため、直前の試合一覧を表示しています。"
-        };
-      }
+    const fallbackError = error?.fallbackError;
+    if (isRateLimitError(error) || isRateLimitError(fallbackError)) {
       return {
         ok: false,
         rateLimited: true,
-        message: "試合履歴APIが混み合っています。少し待ってからもう一度試してください。",
+        message: "\u8a66\u5408\u5c65\u6b74API\u304c\u6df7\u307f\u5408\u3063\u3066\u3044\u307e\u3059\u3002\u5c11\u3057\u5f85\u3063\u3066\u304b\u3089\u3082\u3046\u4e00\u5ea6\u8a66\u3057\u3066\u304f\u3060\u3055\u3044\u3002",
         matches: []
       };
     }
-    return { ok: false, message: "試合履歴の読み込みに失敗しました。", matches: [] };
+    const status = Number(error?.statusCode || fallbackError?.statusCode) || 0;
+    if (status === 401 || status === 403) {
+      return {
+        ok: false,
+        category: "authentication",
+        message: "VALORANTの認証情報を更新できませんでした。Riot Clientを再起動してから、もう一度お試しください。",
+        matches: []
+      };
+    }
+    if (/timeout|timed out/i.test(String(error?.message || ""))) {
+      return {
+        ok: false,
+        category: "timeout",
+        message: "試合履歴の応答に時間がかかっています。自動で再試行しましたが取得できませんでした。",
+        matches: []
+      };
+    }
+    return {
+      ok: false,
+      category: "network",
+      message: "試合履歴に接続できませんでした。通信状態を確認して、もう一度お試しください。",
+      matches: []
+    };
   }
 }
 
 async function getCurrentAccountInfo() {
   const lockfileResult = readLockfileData();
-  if (!lockfileResult.ok) return { ok: false, waiting: true, message: "VALORANT待機中" };
+  if (!lockfileResult.ok) return { ok: false, waiting: true, message: lockfileResult.message || "VALORANT\u5f85\u6a5f\u4e2d" };
 
   const lockfile = lockfileResult.data;
   let token = null;
   try {
     token = await requestLocalApi(lockfile, "/entitlements/v1/token");
   } catch (error) {
-    return { ok: false, waiting: true, message: "アカウント取得失敗" };
+    return { ok: false, waiting: true, message: "\u30a2\u30ab\u30a6\u30f3\u30c8\u53d6\u5f97\u5931\u6557: " + (error?.message || "\u30ed\u30fc\u30ab\u30ebAPI\u306b\u63a5\u7d9a\u3067\u304d\u307e\u305b\u3093") };
   }
 
   const puuid = token?.subject || "";
-  if (!puuid) return { ok: false, waiting: true, message: "アカウント取得失敗" };
+  if (!puuid) return { ok: false, waiting: true, message: "\u30a2\u30ab\u30a6\u30f3\u30c8\u53d6\u5f97\u5931\u6557" };
 
   const clientVersion = await getClientVersion();
   const context = { ok: true, lockfile, token, puuid, host: GLZ_HOST, clientVersion };
@@ -670,11 +879,11 @@ async function getCurrentAccountInfo() {
     const names = await getNamesByPuuid(context, [puuid]);
     riotId = names.get(puuid) || "-";
   } catch (error) {}
-  return { ok: true, puuid, riotId, mode: "VALORANT起動中" };
+  return { ok: true, puuid, riotId, mode: "VALORANT\u8d77\u52d5\u4e2d" };
 }
 
 async function claimCompetitiveKp(matchId) {
-  if (!matchId) return { ok: false, message: "試合が不明です", kpEarned: 0 };
+  if (!matchId) return { ok: false, message: "試合が不正です", kpEarned: 0 };
   if (hasClaimedCompetitiveKp(matchId)) {
     return { ok: false, message: "この試合は獲得済みです", kpEarned: 0, alreadyClaimed: true };
   }
@@ -691,25 +900,34 @@ async function claimCompetitiveKp(matchId) {
 
   const kpEarned = Math.max(0, Number(targetMatch.kills) || 0);
   const apEarned = Math.max(0, Number(targetMatch.assists) || 0);
-  markClaimedCompetitiveKp(matchId);
-
   return {
     ok: true,
-    message: kpEarned > 0 ? `${kpEarned}KP獲得` : "0KP獲得",
+    message: kpEarned > 0 ? String(kpEarned) + "KP獲得" : "0KP獲得",
     kpEarned,
     apEarned,
     claimedMatchId: matchId
   };
 }
 
-async function getCurrentPlayersData({ auto = false, maxRounds = null } = {}) {
-  if (isFetchingPlayers) return { ok: false, message: "取得中です" };
-  isFetchingPlayers = true;
+async function getCurrentPlayersData({ auto = false, maxRounds = null, expectedContext = null, forceNew = false } = {}) {
+  if (isFetchingPlayers() && !forceNew) return { ok: false, message: "取得中です" };
+  if (forceNew) cancelActiveFetch("new-match");
+  const session = {
+    id: ++fetchSessionSeq,
+    matchId: expectedContext?.matchId || "",
+    mode: expectedContext?.mode || "",
+    auto: Boolean(auto),
+    cancelled: false,
+    cancelReason: ""
+  };
+  activeFetchSession = session;
   stopFetchRequested = false;
 
   try {
-    const context = await getCurrentGameContext();
+    const context = expectedContext || await getCurrentGameContext();
     if (!context.ok) return context;
+    session.matchId = context.matchId || "";
+    session.mode = context.mode || "";
     const access = await checkAccountAccessCallback({ puuid: context.puuid });
     if (access?.blocked) {
       return { ok: false, blocked: true, message: "このアカウントは利用停止中です。" };
@@ -721,7 +939,9 @@ async function getCurrentPlayersData({ auto = false, maxRounds = null } = {}) {
       : context.mode === "pregame"
         ? PREGAME_FETCH_ROUNDS
         : INGAME_FETCH_ROUNDS;
+    if (!isSessionActive(session)) return { ok: false, cancelled: true, message: "中止しました" };
     const match = await getMatchByContext(context);
+    if (!isSessionActive(session)) return { ok: false, cancelled: true, message: "中止しました" };
     const isDeathmatch = isDeathmatchMatch(match);
     const modeLabel = getModeLabel(match);
     const players = getAllPlayersFromMatch(match)
@@ -741,6 +961,7 @@ async function getCurrentPlayersData({ auto = false, maxRounds = null } = {}) {
     const selfKills = null;
 
     const namesByPuuid = await getNamesByPuuid(context, players.map((player) => player.puuid));
+    if (!isSessionActive(session)) return { ok: false, cancelled: true, message: "中止しました" };
     const fixedPlayers = new Map();
     const lockedPlayers = new Map();
 
@@ -779,11 +1000,11 @@ async function getCurrentPlayersData({ auto = false, maxRounds = null } = {}) {
       };
     }
 
-    sendPlayersProgress(makePayload(auto ? "自動取得開始" : "基本情報表示 / 詳細取得中"));
+    sendPlayersProgressForSession(session, makePayload(auto ? "自動取得開始" : "基本情報表示 / 詳細取得中"));
 
-    for (let round = 1; round <= effectiveMaxRounds && pendingPlayers.length > 0 && !stopFetchRequested; round += 1) {
+    for (let round = 1; round <= effectiveMaxRounds && pendingPlayers.length > 0 && !stopFetchRequested && isSessionActive(session); round += 1) {
       const playersThisRound = [...pendingPlayers];
-      sendPlayersProgress(makePayload(`詳細取得中 ${round}/${effectiveMaxRounds}`));
+      sendPlayersProgressForSession(session, makePayload("詳細取得中 " + round + "/" + effectiveMaxRounds));
 
       const roundResults = await Promise.all(playersThisRound.map(async (player) => {
         const fallback = mergeLockedPlayerInfo(createBasicPlayerInfo(player, namesByPuuid), lockedPlayers.get(player.puuid));
@@ -798,6 +1019,7 @@ async function getCurrentPlayersData({ auto = false, maxRounds = null } = {}) {
         }
       }));
 
+      if (!isSessionActive(session)) return { ok: false, cancelled: true, message: "中止しました" };
       pendingPlayers = [];
       roundResults.forEach((result) => {
         lockedPlayers.set(result.puuid, result);
@@ -805,9 +1027,14 @@ async function getCurrentPlayersData({ auto = false, maxRounds = null } = {}) {
         else pendingPlayers.push(result);
       });
 
-      sendPlayersProgress(makePayload(`詳細取得中 ${round}/${effectiveMaxRounds}`));
-      if (pendingPlayers.length > 0) await sleep(5000);
+      sendPlayersProgressForSession(session, makePayload("詳細取得中 " + round + "/" + effectiveMaxRounds));
+      if (pendingPlayers.length > 0) {
+        await sleep(5000);
+        if (!isSessionActive(session)) return { ok: false, cancelled: true, message: "中止しました" };
+      }
     }
+
+    if (!isSessionActive(session)) return { ok: false, cancelled: true, message: "中止しました" };
 
     const finalPlayers = buildEstimatedPartyLabels(
       players.map((player) => fixedPlayers.get(player.puuid) || mergeLockedPlayerInfo(createBasicPlayerInfo(player, namesByPuuid), lockedPlayers.get(player.puuid))),
@@ -843,7 +1070,8 @@ async function getCurrentPlayersData({ auto = false, maxRounds = null } = {}) {
     };
   } catch (error) {
     const message = String(error?.message || "取得失敗");
-    sendPlayersProgress({
+    if (!isSessionActive(session)) return { ok: false, cancelled: true, message: "中止しました" };
+    sendPlayersProgressForSession(session, {
       mode: "取得失敗",
       modeLabel: "取得失敗",
       matchId: lastShownMatchId || "-",
@@ -855,21 +1083,22 @@ async function getCurrentPlayersData({ auto = false, maxRounds = null } = {}) {
       fetchRate: "取得失敗",
       autoStatus: autoWatchTimer ? "試合待機中" : "停止中",
       roundStatus: "-",
-      progressText: `取得失敗 / ${message}`,
+      progressText: "取得失敗 / " + message,
       selfKills: null,
       currentKills: null,
       players: lastShownPlayers
     });
     return { ok: false, message };
   } finally {
-    isFetchingPlayers = false;
+    if (activeFetchSession === session) activeFetchSession = null;
   }
 }
 
 async function runAutoWatchTick() {
   const lockfile = readLockfileData();
   if (!lockfile.ok) {
-    sendAutoStatus("試合待機中", "");
+    if (isFetchingPlayers()) cancelActiveFetch("waiting");
+    sendAutoStatus("試合待機中", lockfile.message || "lockfileを確認できません");
     return;
   }
 
@@ -879,30 +1108,43 @@ async function runAutoWatchTick() {
       lastAutoMatchId = "";
       lastAutoMode = "";
     }
-    sendAutoStatus("試合待機中", lastAutoPlayerCount ? `前回人数:${lastAutoPlayerCount}` : "");
+    if (isFetchingPlayers()) cancelActiveFetch("waiting");
+    sendAutoStatus("試合待機中", context.message || (lastAutoPlayerCount ? "前回人数:" + lastAutoPlayerCount : ""));
     return;
   }
 
   lastAutoMatchId = context.matchId || lastAutoMatchId;
   lastAutoMode = context.modeLabel || lastAutoMode;
 
-  if (isFetchingPlayers) {
-    sendAutoStatus(getAutoDisplayStatusFromContext(context), "");
-    return;
+  if (isFetchingPlayers()) {
+    if (!activeFetchSession?.auto) {
+      sendAutoStatus(getAutoDisplayStatusFromContext(context), "");
+      return;
+    }
+    const isSameActiveMatch = activeFetchSession?.matchId === context.matchId && activeFetchSession?.mode === context.mode;
+    if (!isSameActiveMatch) {
+      cancelActiveFetch("match-changed");
+      sendAutoStatus(getAutoDisplayStatusFromContext(context), "試合変更を検知");
+    } else {
+      sendAutoStatus(getAutoDisplayStatusFromContext(context), "");
+      return;
+    }
   }
 
-  const result = await getCurrentPlayersData({ auto: true });
+  const result = await getCurrentPlayersData({ auto: true, expectedContext: context, forceNew: Boolean(activeFetchSession?.cancelled) });
+  if (result?.cancelled) {
+    return;
+  }
   updateLastAutoPlayerCount(result);
 
   if (result?.ok && result?.data?.matchId) {
     lastAutoMatchId = result.data.matchId;
     lastAutoMode = result.data.mode || "";
-
     sendAutoStatus(getAutoDisplayStatusFromContext(context), result.data.fetchRate || "");
     return;
   }
 
-  sendAutoStatus("試合待機中", lastAutoPlayerCount ? `前回人数:${lastAutoPlayerCount}` : "");
+  sendAutoStatus("試合待機中", result?.message || (lastAutoPlayerCount ? "前回人数:" + lastAutoPlayerCount : ""));
 }
 
 function startAutoWatch() {
@@ -910,15 +1152,16 @@ function startAutoWatch() {
 
   stopFetchRequested = false;
   autoWatchTimer = setInterval(() => {
-    runAutoWatchTick().catch((error) => sendAutoStatus(`自動取得失敗: ${error.message}`));
+    runAutoWatchTick().catch((error) => sendAutoStatus("自動取得失敗", error.message));
   }, AUTO_WATCH_INTERVAL_MS);
-  runAutoWatchTick().catch((error) => sendAutoStatus(`自動取得失敗: ${error.message}`));
+  runAutoWatchTick().catch((error) => sendAutoStatus("自動取得失敗", error.message));
 
   return { ok: true, message: "監視開始" };
 }
 
 function stopAutoWatch() {
   stopFetchRequested = true;
+  cancelActiveFetch("stopped");
   if (autoWatchTimer) {
     clearInterval(autoWatchTimer);
     autoWatchTimer = null;
@@ -931,6 +1174,7 @@ module.exports = {
   configureTrackerCore,
   getCompetitiveKpMatches,
   getCurrentAccountInfo,
+  markClaimedCompetitiveKp,
   getCurrentGameContext,
   getCurrentPlayersData,
   readLockfileData,
