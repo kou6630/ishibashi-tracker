@@ -844,13 +844,14 @@ ipcMain.handle("shop-sync-slots-unlocked", async (_event, slots) => {
 });
 ipcMain.handle("farm-sync-spikes", async (_event, localSpikes) => runActiveGoogleAction((session) => firebaseAdmin.syncGoogleFarmSpikes(session.user, session.idToken, localSpikes)));
 ipcMain.handle("farm-apply-spike-operation", async (_event, operation) => runActiveGoogleAction((session) => firebaseAdmin.applyGoogleFarmSpikeOperation(session.user, session.idToken, operation)));
-ipcMain.handle("get-asset-status", async () => assetManager?.getStatus() || { ready: false, syncing: false, version: "", cachedAssets: 0, error: "" });
+ipcMain.handle("get-asset-status", async () => assetManager?.getStatus() || { ready: false, syncing: false, version: "", cachedAssets: 0, totalAssets: 0, downloadedAssets: 0, error: "" });
 app.whenReady().then(() => {
   consumeUpdateRestartGrant();
   assetManager = new AssetManager({ appPath: app.getAppPath(), userDataPath: app.getPath("userData"), isPackaged: app.isPackaged });
   assetManager.initialize().catch(() => {});
   configureAssetProtocol();
   assetManager.on("updated", (status) => mainWindow?.webContents?.send("assets-updated", status));
+  assetManager.on("progress", (status) => mainWindow?.webContents?.send("assets-progress", status));
   session.defaultSession.setPermissionCheckHandler((webContents, permission) => permission === "media" && Boolean(webContents && cameraAccessScopes.has(webContents.id)));
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => callback(permission === "media" && Boolean(webContents && cameraAccessScopes.has(webContents.id))));
   ateamLaunchAuthorized = true;

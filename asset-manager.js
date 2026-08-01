@@ -94,6 +94,8 @@ class AssetManager extends EventEmitter {
     this.activeManifest = null;
     this.syncPromise = null;
     this.lastError = "";
+    this.totalAssets = 0;
+    this.downloadedAssets = 0;
   }
 
   get manifestPath() { return path.join(this.cacheDir, MANIFEST_FILE); }
@@ -116,6 +118,8 @@ class AssetManager extends EventEmitter {
       syncing: Boolean(this.syncPromise),
       version: this.activeManifest?.version || "",
       cachedAssets: this.activeManifest?.assets.length || 0,
+      totalAssets: this.totalAssets,
+      downloadedAssets: this.downloadedAssets,
       error: this.lastError
     };
   }
@@ -147,6 +151,8 @@ class AssetManager extends EventEmitter {
       while (cursor < entries.length) {
         const entry = entries[cursor++];
         await this.downloadEntry(entry);
+        this.downloadedAssets += 1;
+        this.emit("progress", this.getStatus());
       }
     });
     await Promise.all(workers);
@@ -165,6 +171,9 @@ class AssetManager extends EventEmitter {
           if (!current || current.sha256 !== entry.sha256 || current.size !== entry.size || !(await this.hasVerifiedFile(entry))) changed.push(entry);
         }
         const uniqueDownloads = [...new Map(changed.map((entry) => [this.filePathFor(entry), entry])).values()];
+        this.totalAssets = uniqueDownloads.length;
+        this.downloadedAssets = 0;
+        this.emit("progress", this.getStatus());
         await this.downloadEntries(uniqueDownloads);
         await atomicWrite(this.manifestPath, JSON.stringify(manifest));
         this.activeManifest = manifest;
@@ -177,6 +186,7 @@ class AssetManager extends EventEmitter {
         return { ok: false, error: this.lastError, status: this.getStatus() };
       } finally {
         this.syncPromise = null;
+        this.emit("progress", this.getStatus());
       }
     })();
     return this.syncPromise;

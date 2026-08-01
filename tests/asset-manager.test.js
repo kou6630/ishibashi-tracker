@@ -43,6 +43,23 @@ test("初回同期は検証済み素材とmanifestを原子的にキャッシュ
   } finally { await subject.dispose(); }
 });
 
+test("asset sync emits non-blocking download progress", async () => {
+  const first = Buffer.from("first image");
+  const second = Buffer.from("second image");
+  const firstEntry = manifestFor("img/first.png", first).assets[0];
+  const secondEntry = manifestFor("img/second.png", second).assets[0];
+  const manifest = { schemaVersion: 1, version: "assets-v1", assets: [firstEntry, secondEntry] };
+  const subject = await fixture(manifest, { [firstEntry.assetName]: first, [secondEntry.assetName]: second });
+  try {
+    const progress = [];
+    subject.manager.on("progress", (status) => progress.push({ syncing: status.syncing, downloadedAssets: status.downloadedAssets, totalAssets: status.totalAssets }));
+    assert.equal((await subject.manager.sync()).ok, true);
+    assert.equal(progress.some((status) => status.syncing && status.totalAssets === 2), true);
+    assert.equal(progress.some((status) => status.downloadedAssets === 2 && status.totalAssets === 2), true);
+    assert.equal(progress.at(-1).syncing, false);
+  } finally { await subject.dispose(); }
+});
+
 test("二回目の同期は同一ハッシュの素材を再取得しない", async () => {
   const content = Buffer.from("cached image");
   const manifest = manifestFor("img/example.png", content);

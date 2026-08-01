@@ -69,6 +69,10 @@ contextBridge.exposeInMainWorld("valorantApi", {
   onAssetsUpdated: (callback) => {
     ipcRenderer.removeAllListeners("assets-updated");
     ipcRenderer.on("assets-updated", (_event, payload) => callback(payload));
+  },
+  onAssetsProgress: (callback) => {
+    ipcRenderer.removeAllListeners("assets-progress");
+    ipcRenderer.on("assets-progress", (_event, payload) => callback(payload));
   }
 });
 

@@ -1,6 +1,6 @@
 {
   "name": "valorant-tracker",
-  "version": "1.4.12",
+  "version": "1.4.13",
   "description": "石橋ぶりぶりトラッカー",
   "main": "main.js",
   "scripts": {
