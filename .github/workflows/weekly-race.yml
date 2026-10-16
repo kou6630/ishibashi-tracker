@@ -1,0 +1,44 @@
+name: Weekly ranch race
+
+on:
+  # UTC Saturday 15:00 = Sunday 00:00 JST. Rechecks recover delayed/failed runs.
+  schedule:
+    - cron: '0,7,17,27,37,47,57 15 * * 6'
+    - cron: '17,47 16-23 * * 6'
+    - cron: '17,47 0-14 * * 0'
+  workflow_dispatch:
+
+concurrency:
+  group: kayo-weekly-race
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: race-automation/package-lock.json
+      - name: Install recording runtime
+        run: npm ci --prefix race-automation --ignore-scripts
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: ishibashi-tracker
+          workload_identity_provider: projects/472088950213/locations/global/workloadIdentityPools/kayo-race-github/providers/github
+          service_account: kayo-race-runner@ishibashi-tracker.iam.gserviceaccount.com
+      - name: Finalize one immutable weekly draw
+        env:
+          GOOGLE_CLOUD_PROJECT: ishibashi-tracker
+        run: node race-automation/run-weekly.cjs
+      - name: Maintain weekly schedule activity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node race-automation/heartbeat.cjs

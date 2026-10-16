@@ -1,0 +1,8 @@
+{
+  "name": "kayo-weekly-race-automation",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {"node": "22"},
+  "scripts": {"race": "node run-weekly.cjs"},
+  "dependencies": {"firebase-admin": "^13.0.0", "@dimforge/rapier3d-compat": "0.21.0", "three": "0.180.0"}
+}
