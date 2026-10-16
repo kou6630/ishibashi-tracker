@@ -29,6 +29,8 @@ jobs:
           cache-dependency-path: race-automation/package-lock.json
       - name: Install recording runtime
         run: npm ci --prefix race-automation --ignore-scripts
+      - name: Verify hosted recording runtime without live players
+        run: node race-automation/smoke.cjs
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           project_id: ishibashi-tracker
