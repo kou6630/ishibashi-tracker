@@ -14,6 +14,9 @@ async function generate(seed=20261017, entrants=null) {
  function transform(d,x,h,s){const a=Math.atan(d.slope),c=Math.cos(a),n=Math.sin(a);return{x,y:d.y+h*c-s*n,z:d.z+h*n+s*c};}
  function box(p,size,rotation,kind='wood',body=null){
   const collider=R.ColliderDesc.cuboid(...size.map(n=>n/2)).setFriction(.32).setRestitution(.12);
+  // Smooth deflectors must let a lone marble slide along their diagonal edge.
+  // Friction on both the tray and the vertical deflector can otherwise pin it.
+  if(kind==='bumper')collider.setFriction(0).setFrictionCombineRule(R.CoefficientCombineRule.Min);
   if(body)world.createCollider(collider,body);else world.createCollider(collider.setTranslation(p.x,p.y,p.z).setRotation(rotation));
   const out={p:Object.values(p),size,q:[rotation.x,rotation.y,rotation.z,rotation.w],kind};shapes.push(out);return out;
  }
